@@ -1,0 +1,71 @@
+# Tribu Platform - estado del proyecto
+
+## Funciona
+
+- Login interno admin con Supabase Auth.
+- Dashboard interno.
+- Gestion de eventos.
+- Gestion de invitados internos.
+- Entradas QR por evento.
+- Ticket publico por token.
+- Check-in manual y scanner con camara usando `html5-qrcode`.
+- Pagos manuales por transferencia.
+- Registro publico sin password.
+- Portal publico del invitado por access token.
+- Solicitudes publicas por evento.
+- Confirmacion manual de pago con generacion automatica de guest interno y tickets.
+- Fallback gratuito de WhatsApp con `wa.me`.
+
+## Rutas principales
+
+- Admin: `/login`, `/dashboard`, `/events`.
+- Evento: `/events/[id]`.
+- Invitados: `/events/[id]/guests`.
+- Entradas: `/events/[id]/tickets`.
+- Check-in: `/events/[id]/checkin`.
+- Pagos: `/events/[id]/payments`.
+- Reportes: `/events/[id]/reports`.
+- Solicitudes publicas: `/events/[id]/public-guests`.
+- Publico: `/p`, `/p/events/[slug]`, `/p/events/[slug]/register`.
+- Portal invitado: `/p/guest/[accessToken]`.
+- Ticket publico: `/ticket/[token]`.
+
+## Local
+
+```bash
+npm install
+npm run dev
+```
+
+## Build
+
+```bash
+npm run lint
+npm run build
+```
+
+## Variables necesarias
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+```
+
+## Checklist evento real
+
+- Crear evento.
+- Configurar slug y publicarlo.
+- Probar `/p/events/[slug]`.
+- Registrar una solicitud publica.
+- Avisar pago con referencia y/o imagen.
+- Confirmar pago desde admin.
+- Ver QR en portal publico.
+- Probar check-in manual con token.
+- Probar scanner en celular con HTTPS.
+
+## Pendientes recomendados
+
+- Endurecer RLS despues de la prueba real.
+- Pasar confirmacion de pago a API route/server action con permisos de admin.
+- Integrar WhatsApp Cloud API si se decide automatizar de verdad.
+- Agregar storage privado con signed URLs si se necesita mayor privacidad para comprobantes.

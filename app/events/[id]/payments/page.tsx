@@ -5,11 +5,14 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../../../../components/AppShell";
 import { Badge } from "../../../../components/Badge";
+import { CopyButton } from "../../../../components/CopyButton";
 import { EmptyState } from "../../../../components/EmptyState";
 import { EventContextNav } from "../../../../components/EventContextNav";
 import { confirmPublicGuestPayment, formatMoney, getSuggestedPaymentAmount } from "../../../../lib/payments";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase";
-import type { EventRecord, PaymentStatus, PublicGuestRecord } from "../../../../types/database";
+import { getPublicTicketUrl } from "../../../../lib/tickets";
+import { createTicketWhatsAppMessage, createWhatsAppUrl } from "../../../../lib/whatsapp";
+import type { EventRecord, PaymentStatus, PublicGuestRecord, TicketRecord } from "../../../../types/database";
 
 const paymentLabels: Record<PaymentStatus, string> = {
   pending: "Pendiente",
@@ -25,15 +28,53 @@ const paymentTone: Record<PaymentStatus, "neutral" | "warning" | "success" | "da
   rejected: "danger",
 };
 
+function getAbsoluteTicketUrl(token: string) {
+  if (typeof window === "undefined") {
+    return getPublicTicketUrl(token);
+  }
+
+  return `${window.location.origin}/ticket/${token}`;
+}
+
 export default function PaymentsPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [requests, setRequests] = useState<PublicGuestRecord[]>([]);
+  const [ticketsByPublicGuest, setTicketsByPublicGuest] = useState<Record<string, TicketRecord[]>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [activeId, setActiveId] = useState("");
   const [error, setError] = useState("");
+
+  async function loadTicketsForRequests(publicGuests: PublicGuestRecord[]) {
+    const ids = publicGuests.map((request) => request.id);
+
+    if (!ids.length) {
+      setTicketsByPublicGuest({});
+      return;
+    }
+
+    const { data } = await supabase
+      .from("tickets")
+      .select("id, event_id, guest_id, public_guest_id, token, status, max_uses, used_count, created_at")
+      .in("public_guest_id", ids)
+      .order("created_at", { ascending: true });
+
+    const grouped = ((data ?? []) as TicketRecord[]).reduce<Record<string, TicketRecord[]>>(
+      (acc, ticket) => {
+        if (!ticket.public_guest_id) {
+          return acc;
+        }
+
+        acc[ticket.public_guest_id] = [...(acc[ticket.public_guest_id] ?? []), ticket];
+        return acc;
+      },
+      {}
+    );
+
+    setTicketsByPublicGuest(grouped);
+  }
 
   async function loadPayments() {
     const [eventResult, requestsResult] = await Promise.all([
@@ -44,7 +85,7 @@ export default function PaymentsPage() {
         .single(),
       supabase
         .from("public_guests")
-        .select("id, event_id, full_name, phone, instagram, ticket_quantity, food_preferences, notes, status, payment_status, access_token, payment_reference, payment_proof, payment_notified_at, payment_confirmed_at, internal_guest_id, created_at")
+        .select("id, event_id, full_name, phone, instagram, ticket_quantity, food_preferences, notes, status, payment_status, access_token, payment_reference, payment_proof, payment_proof_file_url, payment_notified_at, payment_confirmed_at, internal_guest_id, created_at")
         .eq("event_id", params.id)
         .order("created_at", { ascending: false }),
     ]);
@@ -58,7 +99,9 @@ export default function PaymentsPage() {
     if (requestsResult.error) {
       setError(requestsResult.error.message);
     } else {
-      setRequests((requestsResult.data ?? []) as PublicGuestRecord[]);
+      const publicGuests = (requestsResult.data ?? []) as PublicGuestRecord[];
+      setRequests(publicGuests);
+      await loadTicketsForRequests(publicGuests);
     }
 
     setIsLoading(false);
@@ -74,7 +117,7 @@ export default function PaymentsPage() {
           .single(),
         supabase
           .from("public_guests")
-          .select("id, event_id, full_name, phone, instagram, ticket_quantity, food_preferences, notes, status, payment_status, access_token, payment_reference, payment_proof, payment_notified_at, payment_confirmed_at, internal_guest_id, created_at")
+          .select("id, event_id, full_name, phone, instagram, ticket_quantity, food_preferences, notes, status, payment_status, access_token, payment_reference, payment_proof, payment_proof_file_url, payment_notified_at, payment_confirmed_at, internal_guest_id, created_at")
           .eq("event_id", params.id)
           .order("created_at", { ascending: false }),
       ]);
@@ -88,7 +131,31 @@ export default function PaymentsPage() {
       if (requestsResult.error) {
         setError(requestsResult.error.message);
       } else {
-        setRequests((requestsResult.data ?? []) as PublicGuestRecord[]);
+        const publicGuests = (requestsResult.data ?? []) as PublicGuestRecord[];
+        setRequests(publicGuests);
+
+        const ids = publicGuests.map((request) => request.id);
+
+        if (ids.length) {
+          const { data } = await supabase
+            .from("tickets")
+            .select("id, event_id, guest_id, public_guest_id, token, status, max_uses, used_count, created_at")
+            .in("public_guest_id", ids)
+            .order("created_at", { ascending: true });
+
+          const grouped = ((data ?? []) as TicketRecord[]).reduce<Record<string, TicketRecord[]>>(
+            (acc, ticket) => {
+              if (!ticket.public_guest_id) {
+                return acc;
+              }
+
+              acc[ticket.public_guest_id] = [...(acc[ticket.public_guest_id] ?? []), ticket];
+              return acc;
+            },
+            {}
+          );
+          setTicketsByPublicGuest(grouped);
+        }
       }
 
       setIsLoading(false);
@@ -116,15 +183,13 @@ export default function PaymentsPage() {
     setError("");
     setActiveId(request.id);
 
-    const payload = {
-      payment_status: status,
-      payment_confirmed_at: status === "confirmed" ? new Date().toISOString() : null,
-      status: status === "confirmed" ? "approved" : request.status,
-    };
-
     const { error: requestError } = await supabase
       .from("public_guests")
-      .update(payload)
+      .update({
+        payment_status: status,
+        payment_confirmed_at: status === "confirmed" ? new Date().toISOString() : null,
+        status: status === "confirmed" ? "approved" : request.status,
+      })
       .eq("id", request.id);
 
     if (requestError) {
@@ -155,7 +220,7 @@ export default function PaymentsPage() {
             Volver al evento
           </Link>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">Pagos</h1>
-          <p className="mt-2 text-sm text-zinc-400">Transferencias manuales y activacion de QR.</p>
+          <p className="mt-2 text-sm text-zinc-400">Validación manual, QR y WhatsApp.</p>
         </header>
 
         {error ? (
@@ -183,6 +248,12 @@ export default function PaymentsPage() {
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {requests.map((request) => {
               const amount = getSuggestedPaymentAmount(request, event);
+              const tickets = ticketsByPublicGuest[request.id] ?? [];
+              const ticketUrls = tickets.map((ticket) => getAbsoluteTicketUrl(ticket.token));
+              const whatsappMessage = createTicketWhatsAppMessage(request.full_name, ticketUrls);
+              const whatsappUrl = ticketUrls.length
+                ? createWhatsAppUrl(request.phone, whatsappMessage)
+                : "";
 
               return (
                 <article
@@ -215,8 +286,18 @@ export default function PaymentsPage() {
                     <div className="rounded-lg bg-zinc-950/70 p-3">
                       <p className="text-zinc-500">Comprobante</p>
                       <p className="mt-1 break-words font-semibold">
-                        {request.payment_proof || "Sin comprobante"}
+                        {request.payment_proof || "Sin texto"}
                       </p>
+                      {request.payment_proof_file_url ? (
+                        <a
+                          href={request.payment_proof_file_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-2 inline-block font-semibold text-emerald-300"
+                        >
+                          Ver imagen
+                        </a>
+                      ) : null}
                     </div>
                   </div>
 
@@ -247,6 +328,21 @@ export default function PaymentsPage() {
                         Rechazar
                       </button>
                     </div>
+
+                    {ticketUrls.length ? (
+                      <div className="grid gap-2 rounded-lg border border-white/10 p-3">
+                        <a
+                          href={whatsappUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex min-h-11 items-center justify-center rounded-lg bg-emerald-500 px-3 text-sm font-semibold text-zinc-950"
+                        >
+                          Enviar QR por WhatsApp
+                        </a>
+                        <CopyButton value={whatsappMessage} label="Copiar mensaje" />
+                        <CopyButton value={ticketUrls[0]} label="Copiar link ticket" />
+                      </div>
+                    ) : null}
                   </div>
                 </article>
               );

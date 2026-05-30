@@ -27,6 +27,7 @@ type PublicGuestPortalRecord = {
   access_token: string;
   payment_reference: string | null;
   payment_proof: string | null;
+  payment_proof_file_url: string | null;
   payment_notified_at: string | null;
   payment_confirmed_at: string | null;
   internal_guest_id: string | null;
@@ -171,6 +172,7 @@ export default function PublicGuestPortalPage() {
                   amount={amount}
                   defaultReference={guest.payment_reference}
                   defaultProof={guest.payment_proof}
+                  defaultProofFileUrl={guest.payment_proof_file_url}
                   onNotified={loadPortal}
                 />
               </>

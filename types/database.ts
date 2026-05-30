@@ -103,6 +103,7 @@ export type PaymentRecord = {
   method: string | null;
   reference: string | null;
   proof: string | null;
+  proof_file_url: string | null;
   notes: string | null;
   confirmed_at: string | null;
   rejected_at: string | null;
@@ -132,6 +133,7 @@ export type PublicGuestRecord = {
   access_token: string;
   payment_reference: string | null;
   payment_proof: string | null;
+  payment_proof_file_url: string | null;
   payment_notified_at: string | null;
   payment_confirmed_at: string | null;
   internal_guest_id: string | null;

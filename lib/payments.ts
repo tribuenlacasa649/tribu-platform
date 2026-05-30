@@ -94,6 +94,7 @@ export async function confirmPublicGuestPayment(
       method: "manual_transfer",
       reference: publicGuest.payment_reference,
       proof: publicGuest.payment_proof,
+      proof_file_url: publicGuest.payment_proof_file_url,
       confirmed_at: new Date().toISOString(),
       rejected_at: null,
     },

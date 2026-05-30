@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useMemo, useState } from "react";
 import { CopyButton } from "./CopyButton";
 import { createSupabaseBrowserClient } from "../lib/supabase";
 
@@ -9,53 +9,115 @@ type PaymentNoticeFormProps = {
   amount: number;
   defaultReference?: string | null;
   defaultProof?: string | null;
+  defaultProofFileUrl?: string | null;
   onNotified: () => void;
 };
 
 const paymentAlias = "TRIBU.EVENTOS";
 const paymentHolder = "Tribu Platform";
+const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+const maxFileSize = 5 * 1024 * 1024;
 
 export function PaymentNoticeForm({
   accessToken,
   amount,
   defaultReference,
   defaultProof,
+  defaultProofFileUrl,
   onNotified,
 }: PaymentNoticeFormProps) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [reference, setReference] = useState(defaultReference ?? "");
   const [proof, setProof] = useState(defaultProof ?? "");
+  const [proofFileUrl, setProofFileUrl] = useState(defaultProofFileUrl ?? "");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    setError("");
+    const file = event.target.files?.[0] ?? null;
+
+    if (!file) {
+      setSelectedFile(null);
+      return;
+    }
+
+    if (!allowedTypes.includes(file.type)) {
+      setSelectedFile(null);
+      setError("El comprobante debe ser JPG, PNG o WEBP.");
+      return;
+    }
+
+    if (file.size > maxFileSize) {
+      setSelectedFile(null);
+      setError("El comprobante no puede superar 5 MB.");
+      return;
+    }
+
+    setSelectedFile(file);
+  }
+
+  async function uploadProofFile() {
+    if (!selectedFile) {
+      return proofFileUrl || null;
+    }
+
+    const extension = selectedFile.name.split(".").pop()?.toLowerCase() || "jpg";
+    const path = `${accessToken}/${Date.now()}.${extension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("payment-proofs")
+      .upload(path, selectedFile, {
+        cacheControl: "3600",
+        contentType: selectedFile.type,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      throw new Error(uploadError.message);
+    }
+
+    const { data } = supabase.storage.from("payment-proofs").getPublicUrl(path);
+    return data.publicUrl;
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
 
-    if (!reference.trim() && !proof.trim()) {
-      setError("Pegá una referencia o comprobante para avisar el pago.");
+    if (!reference.trim() && !proof.trim() && !selectedFile && !proofFileUrl) {
+      setError("Agregá referencia, comprobante escrito o foto.");
       return;
     }
 
     setIsSaving(true);
 
-    const { error: updateError } = await supabase.rpc("notify_public_guest_payment", {
-      lookup_token: accessToken,
-      new_reference: reference.trim() || null,
-      new_proof: proof.trim() || null,
-    });
+    try {
+      const uploadedProofFileUrl = await uploadProofFile();
 
-    setIsSaving(false);
+      const { error: updateError } = await supabase.rpc("notify_public_guest_payment", {
+        lookup_token: accessToken,
+        new_reference: reference.trim() || null,
+        new_proof: proof.trim() || null,
+        new_proof_file_url: uploadedProofFileUrl,
+      });
 
-    if (updateError) {
-      setError(updateError.message);
-      return;
+      if (updateError) {
+        throw new Error(updateError.message);
+      }
+
+      setProofFileUrl(uploadedProofFileUrl ?? "");
+      onNotified();
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "No se pudo avisar el pago.");
+    } finally {
+      setIsSaving(false);
     }
-
-    onNotified();
   }
 
   const amountLabel = amount > 0 ? `$${Math.round(amount).toLocaleString("es-AR")}` : "A confirmar";
+  const canSubmit = Boolean(reference.trim() || proof.trim() || selectedFile || proofFileUrl);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
@@ -117,9 +179,33 @@ export function PaymentNoticeForm({
         />
       </div>
 
+      <div className="space-y-2">
+        <label htmlFor="payment_file" className="text-sm font-semibold text-zinc-200">
+          Foto del comprobante
+        </label>
+        <input
+          id="payment_file"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={handleFileChange}
+          className="block w-full rounded-xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-zinc-200 file:mr-4 file:rounded-lg file:border-0 file:bg-emerald-400 file:px-3 file:py-2 file:font-semibold file:text-zinc-950"
+        />
+        <p className="text-xs text-zinc-500">JPG, PNG o WEBP. Máximo 5 MB.</p>
+        {proofFileUrl ? (
+          <a
+            href={proofFileUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="block text-sm font-semibold text-emerald-300"
+          >
+            Ver comprobante cargado
+          </a>
+        ) : null}
+      </div>
+
       <button
         type="submit"
-        disabled={isSaving || (!reference.trim() && !proof.trim())}
+        disabled={isSaving || !canSubmit}
         className="min-h-14 w-full rounded-xl bg-emerald-400 px-5 text-lg font-semibold text-zinc-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isSaving ? "Enviando..." : "Ya pagué"}
