@@ -3,39 +3,25 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
-import { eventStatusLabels, eventStatuses } from "./actions";
 import { createSupabaseBrowserClient } from "../../lib/supabase";
-import type { EventRecord, EventStatus } from "../../types/database";
+import { guestStatusLabels, guestStatuses } from "./actions";
+import type { GuestRecord, GuestStatus } from "../../types/database";
 
-type EventFormProps = {
-  event?: EventRecord;
+type GuestFormProps = {
+  eventId: string;
+  guest?: GuestRecord;
   mode: "create" | "edit";
 };
 
-function toDatetimeLocal(value: string | null) {
-  if (!value) {
-    return "";
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-    .toISOString()
-    .slice(0, 16);
-}
-
-export function EventForm({ event, mode }: EventFormProps) {
+export function GuestForm({ eventId, guest, mode }: GuestFormProps) {
   const router = useRouter();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const [name, setName] = useState(event?.name ?? "");
-  const [description, setDescription] = useState(event?.description ?? "");
-  const [location, setLocation] = useState(event?.location ?? "");
-  const [startsAt, setStartsAt] = useState(toDatetimeLocal(event?.starts_at ?? null));
-  const [endsAt, setEndsAt] = useState(toDatetimeLocal(event?.ends_at ?? null));
-  const [status, setStatus] = useState<EventStatus>(event?.status ?? "draft");
+  const [name, setName] = useState(guest?.name ?? "");
+  const [contact, setContact] = useState(guest?.contact ?? "");
+  const [foodPreferences, setFoodPreferences] = useState(guest?.food_preferences ?? "");
+  const [ticketQuantity, setTicketQuantity] = useState(guest?.ticket_quantity ?? 1);
+  const [notes, setNotes] = useState(guest?.notes ?? "");
+  const [status, setStatus] = useState<GuestStatus>(guest?.status ?? "active");
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -44,25 +30,26 @@ export function EventForm({ event, mode }: EventFormProps) {
     setError("");
 
     if (!name.trim()) {
-      setError("El nombre del evento es obligatorio.");
+      setError("El nombre del invitado es obligatorio.");
       return;
     }
 
     setIsSaving(true);
 
     const payload = {
+      event_id: eventId,
       name: name.trim(),
-      description: description.trim() || null,
-      location: location.trim() || null,
-      starts_at: startsAt ? new Date(startsAt).toISOString() : null,
-      ends_at: endsAt ? new Date(endsAt).toISOString() : null,
+      contact: contact.trim() || null,
+      food_preferences: foodPreferences.trim() || null,
+      ticket_quantity: Math.max(1, Number(ticketQuantity) || 1),
+      notes: notes.trim() || null,
       status,
     };
 
     const request =
-      mode === "edit" && event
-        ? supabase.from("events").update(payload).eq("id", event.id).select("id").single()
-        : supabase.from("events").insert(payload).select("id").single();
+      mode === "edit" && guest
+        ? supabase.from("guests").update(payload).eq("id", guest.id).select("id").single()
+        : supabase.from("guests").insert(payload).select("id").single();
 
     const { data, error: requestError } = await request;
     setIsSaving(false);
@@ -72,7 +59,7 @@ export function EventForm({ event, mode }: EventFormProps) {
       return;
     }
 
-    router.push(`/events/${data.id}`);
+    router.push(`/events/${eventId}/guests/${data.id}`);
     router.refresh();
   }
 
@@ -95,22 +82,22 @@ export function EventForm({ event, mode }: EventFormProps) {
               value={name}
               onChange={(event) => setName(event.target.value)}
               className="min-h-12 w-full rounded-lg border border-white/10 bg-zinc-950 px-4 text-base text-white outline-none transition placeholder:text-zinc-600 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
-              placeholder="Nombre del evento"
+              placeholder="Nombre del invitado"
               required
             />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <label htmlFor="location" className="text-sm font-medium text-zinc-200">
-                Ubicacion
+              <label htmlFor="contact" className="text-sm font-medium text-zinc-200">
+                Contacto
               </label>
               <input
-                id="location"
-                value={location}
-                onChange={(event) => setLocation(event.target.value)}
+                id="contact"
+                value={contact}
+                onChange={(event) => setContact(event.target.value)}
                 className="min-h-12 w-full rounded-lg border border-white/10 bg-zinc-950 px-4 text-base text-white outline-none transition placeholder:text-zinc-600 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
-                placeholder="Salon, ciudad o direccion"
+                placeholder="Telefono, email o Instagram"
               />
             </div>
 
@@ -121,12 +108,12 @@ export function EventForm({ event, mode }: EventFormProps) {
               <select
                 id="status"
                 value={status}
-                onChange={(event) => setStatus(event.target.value as EventStatus)}
+                onChange={(event) => setStatus(event.target.value as GuestStatus)}
                 className="min-h-12 w-full rounded-lg border border-white/10 bg-zinc-950 px-4 text-base text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
               >
-                {eventStatuses.map((statusOption) => (
+                {guestStatuses.map((statusOption) => (
                   <option key={statusOption} value={statusOption}>
-                    {eventStatusLabels[statusOption]}
+                    {guestStatusLabels[statusOption]}
                   </option>
                 ))}
               </select>
@@ -135,43 +122,44 @@ export function EventForm({ event, mode }: EventFormProps) {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <label htmlFor="starts_at" className="text-sm font-medium text-zinc-200">
-                Inicio
+              <label htmlFor="food" className="text-sm font-medium text-zinc-200">
+                Preferencia gastronomica
               </label>
               <input
-                id="starts_at"
-                type="datetime-local"
-                value={startsAt}
-                onChange={(event) => setStartsAt(event.target.value)}
-                className="min-h-12 w-full rounded-lg border border-white/10 bg-zinc-950 px-4 text-base text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+                id="food"
+                value={foodPreferences}
+                onChange={(event) => setFoodPreferences(event.target.value)}
+                className="min-h-12 w-full rounded-lg border border-white/10 bg-zinc-950 px-4 text-base text-white outline-none transition placeholder:text-zinc-600 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+                placeholder="Vegetariano, celiaco, sin preferencia"
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="ends_at" className="text-sm font-medium text-zinc-200">
-                Fin
+              <label htmlFor="tickets" className="text-sm font-medium text-zinc-200">
+                Entradas
               </label>
               <input
-                id="ends_at"
-                type="datetime-local"
-                value={endsAt}
-                onChange={(event) => setEndsAt(event.target.value)}
+                id="tickets"
+                type="number"
+                min={1}
+                value={ticketQuantity}
+                onChange={(event) => setTicketQuantity(Number(event.target.value))}
                 className="min-h-12 w-full rounded-lg border border-white/10 bg-zinc-950 px-4 text-base text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="description" className="text-sm font-medium text-zinc-200">
-              Descripcion
+            <label htmlFor="notes" className="text-sm font-medium text-zinc-200">
+              Notas
             </label>
             <textarea
-              id="description"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              rows={5}
+              id="notes"
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+              rows={4}
               className="w-full rounded-lg border border-white/10 bg-zinc-950 px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-600 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
-              placeholder="Notas internas del evento"
+              placeholder="Notas internas"
             />
           </div>
         </div>
@@ -183,10 +171,10 @@ export function EventForm({ event, mode }: EventFormProps) {
           disabled={isSaving}
           className="min-h-12 rounded-lg bg-emerald-400 px-5 text-base font-semibold text-zinc-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isSaving ? "Guardando..." : mode === "edit" ? "Guardar cambios" : "Crear evento"}
+          {isSaving ? "Guardando..." : mode === "edit" ? "Guardar cambios" : "Crear invitado"}
         </button>
         <Link
-          href={event ? `/events/${event.id}` : "/events"}
+          href={guest ? `/events/${eventId}/guests/${guest.id}` : `/events/${eventId}/guests`}
           className="flex min-h-12 items-center justify-center rounded-lg border border-white/10 px-5 text-base font-semibold text-zinc-100 transition hover:bg-white/5"
         >
           Cancelar
