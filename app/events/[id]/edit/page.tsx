@@ -19,7 +19,7 @@ export default function EditEventPage() {
     async function loadEvent() {
       const { data, error: requestError } = await supabase
         .from("events")
-        .select("id, name, description, location, starts_at, ends_at, status, created_at")
+        .select("id, name, description, location, starts_at, ends_at, status, slug, is_public, public_title, public_description, ticket_price, public_status, created_at")
         .eq("id", params.id)
         .single();
 

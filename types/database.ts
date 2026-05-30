@@ -8,6 +8,10 @@ export type TicketStatus = "available" | "used" | "cancelled";
 
 export type PaymentStatus = "pending" | "notified" | "confirmed" | "rejected";
 
+export type PublicEventStatus = "draft" | "published" | "closed";
+
+export type PublicGuestStatus = "pending" | "approved" | "cancelled";
+
 export type ProfileRecord = {
   id: string;
   full_name: string | null;
@@ -23,6 +27,12 @@ export type EventRecord = {
   starts_at: string | null;
   ends_at: string | null;
   status: EventStatus;
+  slug: string | null;
+  is_public: boolean;
+  public_title: string | null;
+  public_description: string | null;
+  ticket_price: number | null;
+  public_status: PublicEventStatus;
   created_at: string;
 };
 
@@ -33,6 +43,12 @@ export type EventFormValues = {
   starts_at: string;
   ends_at: string;
   status: EventStatus;
+  slug: string;
+  is_public: boolean;
+  public_title: string;
+  public_description: string;
+  ticket_price: string;
+  public_status: PublicEventStatus;
 };
 
 export type GuestRecord = {
@@ -95,4 +111,33 @@ export type TicketWithGuest = TicketRecord & {
 export type PublicTicket = TicketRecord & {
   events: Pick<EventRecord, "id" | "name" | "location" | "starts_at"> | null;
   guests: Pick<GuestRecord, "id" | "name" | "contact"> | null;
+};
+
+export type PublicGuestRecord = {
+  id: string;
+  event_id: string;
+  full_name: string;
+  phone: string;
+  instagram: string | null;
+  ticket_quantity: number;
+  food_preferences: string | null;
+  notes: string | null;
+  status: PublicGuestStatus;
+  payment_status: PaymentStatus;
+  access_token: string;
+  created_at: string;
+};
+
+export type PublicGuestWithEvent = PublicGuestRecord & {
+  events:
+    | Pick<
+        EventRecord,
+        | "id"
+        | "name"
+        | "public_title"
+        | "location"
+        | "starts_at"
+        | "ticket_price"
+      >
+    | null;
 };

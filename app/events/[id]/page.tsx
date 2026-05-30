@@ -5,9 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../../../components/AppShell";
 import { Badge, eventStatusTone } from "../../../components/Badge";
+import { CopyButton } from "../../../components/CopyButton";
 import { EventContextNav } from "../../../components/EventContextNav";
 import { EventModuleGrid } from "../../../components/EventModuleGrid";
 import { StatCard } from "../../../components/StatCard";
+import { getAbsolutePublicEventUrl } from "../../../lib/public-routes";
 import { createSupabaseBrowserClient } from "../../../lib/supabase";
 import type { EventRecord } from "../../../types/database";
 import { eventStatusLabels } from "../actions";
@@ -52,7 +54,7 @@ export default function EventDetailPage() {
     async function loadEvent() {
       const { data, error: requestError } = await supabase
         .from("events")
-        .select("id, name, description, location, starts_at, ends_at, status, created_at")
+        .select("id, name, description, location, starts_at, ends_at, status, slug, is_public, public_title, public_description, ticket_price, public_status, created_at")
         .eq("id", params.id)
         .single();
 
@@ -180,6 +182,34 @@ export default function EventDetailPage() {
               <StatCard label="Tickets" value={stats.tickets} />
               <StatCard label="Check-ins" value={stats.usedTickets} />
               <StatCard label="Pagos OK" value={stats.confirmedPayments} />
+            </section>
+
+            <section className="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge tone={event.is_public && event.public_status === "published" ? "success" : "neutral"}>
+                      {event.is_public ? event.public_status : "privado"}
+                    </Badge>
+                    <Badge tone="soon">Publico</Badge>
+                  </div>
+                  <h2 className="mt-3 text-xl font-semibold">Link publico</h2>
+                  <p className="mt-2 break-all text-sm text-zinc-400">
+                    {event.slug ? getAbsolutePublicEventUrl(event.slug) : "Configura un slug para compartir."}
+                  </p>
+                </div>
+                <div className="grid gap-3 sm:min-w-52">
+                  {event.slug ? (
+                    <CopyButton value={getAbsolutePublicEventUrl(event.slug)} />
+                  ) : null}
+                  <Link
+                    href={`/events/${event.id}/public-guests`}
+                    className="flex min-h-11 items-center justify-center rounded-lg border border-white/10 px-4 text-sm font-semibold text-zinc-100 transition hover:bg-white/5"
+                  >
+                    Solicitudes publicas
+                  </Link>
+                </div>
+              </div>
             </section>
 
             <section className="grid gap-4 md:grid-cols-3">
