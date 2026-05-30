@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../../../../components/AppShell";
 import { Badge } from "../../../../components/Badge";
 import { EmptyState } from "../../../../components/EmptyState";
+import { EventContextNav } from "../../../../components/EventContextNav";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase";
 import { createTicketToken } from "../../../../lib/tickets";
 import type { GuestRecord, TicketStatus, TicketWithGuest } from "../../../../types/database";
@@ -142,6 +143,8 @@ export default function EventTicketsPage() {
   return (
     <AppShell title="Entradas QR">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <EventContextNav eventId={params.id} />
+
         <header className="flex flex-col gap-4 rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div>
             <Link href={`/events/${params.id}`} className="text-sm font-semibold text-emerald-300">

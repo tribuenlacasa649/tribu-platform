@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../../../../components/AppShell";
 import { Badge, guestStatusTone } from "../../../../components/Badge";
 import { EmptyState } from "../../../../components/EmptyState";
+import { EventContextNav } from "../../../../components/EventContextNav";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase";
 import type { GuestRecord } from "../../../../types/database";
 import { guestStatusLabels } from "../../actions";
@@ -59,6 +60,8 @@ export default function GuestsPage() {
   return (
     <AppShell title="Invitados">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <EventContextNav eventId={params.id} />
+
         <header className="flex flex-col gap-4 rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div>
             <Link href={`/events/${params.id}`} className="text-sm font-semibold text-emerald-300">

@@ -5,6 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../../../components/AppShell";
 import { Badge, eventStatusTone } from "../../../components/Badge";
+import { EventContextNav } from "../../../components/EventContextNav";
+import { EventModuleGrid } from "../../../components/EventModuleGrid";
+import { StatCard } from "../../../components/StatCard";
 import { createSupabaseBrowserClient } from "../../../lib/supabase";
 import type { EventRecord } from "../../../types/database";
 import { eventStatusLabels } from "../actions";
@@ -23,35 +26,12 @@ function formatDateTime(value: string | null) {
   }).format(new Date(value));
 }
 
-const activeModules = [
-  {
-    label: "Invitados",
-    href: "guests",
-    description: "Lista, preferencias y entradas por persona.",
-  },
-  {
-    label: "Entradas QR",
-    href: "tickets",
-    description: "Generar y revisar QR por invitado.",
-  },
-  {
-    label: "Check-in",
-    href: "checkin",
-    description: "Validar tickets desde puerta.",
-  },
-  {
-    label: "Pagos",
-    href: "payments",
-    description: "Control manual de estados de pago.",
-  },
-  {
-    label: "Reportes",
-    href: "reports",
-    description: "Resumen de asistencia y pagos.",
-  },
-];
-
-const upcomingModules = ["Produccion", "Stock"];
+type EventStats = {
+  guests: number;
+  tickets: number;
+  usedTickets: number;
+  confirmedPayments: number;
+};
 
 export default function EventDetailPage() {
   const params = useParams<{ id: string }>();
@@ -61,6 +41,12 @@ export default function EventDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState("");
+  const [stats, setStats] = useState<EventStats>({
+    guests: 0,
+    tickets: 0,
+    usedTickets: 0,
+    confirmedPayments: 0,
+  });
 
   useEffect(() => {
     async function loadEvent() {
@@ -75,6 +61,35 @@ export default function EventDetailPage() {
       } else {
         setEvent(data as EventRecord);
       }
+
+      const [guests, tickets, usedTickets, confirmedPayments] = await Promise.all([
+        supabase
+          .from("guests")
+          .select("id", { count: "exact", head: true })
+          .eq("event_id", params.id)
+          .neq("status", "deleted"),
+        supabase
+          .from("tickets")
+          .select("id", { count: "exact", head: true })
+          .eq("event_id", params.id),
+        supabase
+          .from("tickets")
+          .select("id", { count: "exact", head: true })
+          .eq("event_id", params.id)
+          .eq("status", "used"),
+        supabase
+          .from("payments")
+          .select("id", { count: "exact", head: true })
+          .eq("event_id", params.id)
+          .eq("status", "confirmed"),
+      ]);
+
+      setStats({
+        guests: guests.count ?? 0,
+        tickets: tickets.count ?? 0,
+        usedTickets: usedTickets.count ?? 0,
+        confirmedPayments: confirmedPayments.count ?? 0,
+      });
 
       setIsLoading(false);
     }
@@ -103,6 +118,8 @@ export default function EventDetailPage() {
   return (
     <AppShell title="Detalle evento">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <EventContextNav eventId={params.id} />
+
         <header className="space-y-4">
           <Link href="/events" className="text-sm font-semibold text-emerald-300">
             Volver a eventos
@@ -158,6 +175,13 @@ export default function EventDetailPage() {
 
         {event ? (
           <>
+            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <StatCard label="Invitados" value={stats.guests} />
+              <StatCard label="Tickets" value={stats.tickets} />
+              <StatCard label="Check-ins" value={stats.usedTickets} />
+              <StatCard label="Pagos OK" value={stats.confirmedPayments} />
+            </section>
+
             <section className="grid gap-4 md:grid-cols-3">
               <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
                 <p className="text-sm text-zinc-500">Inicio</p>
@@ -179,29 +203,7 @@ export default function EventDetailPage() {
               </div>
             </section>
 
-            <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {activeModules.map((module) => (
-                <Link
-                  key={module.href}
-                  href={`/events/${event.id}/${module.href}`}
-                  className="rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-5 transition hover:bg-emerald-400/15"
-                >
-                  <Badge tone="success">Activo</Badge>
-                  <h2 className="mt-3 text-xl font-semibold">{module.label}</h2>
-                  <p className="mt-2 text-sm text-zinc-300">{module.description}</p>
-                </Link>
-              ))}
-              {upcomingModules.map((module) => (
-                <div
-                  key={module}
-                  className="rounded-xl border border-white/10 bg-white/[0.04] p-5 opacity-75"
-                >
-                  <Badge tone="soon">Proximamente</Badge>
-                  <h2 className="mt-3 text-xl font-semibold">{module}</h2>
-                  <p className="mt-2 text-sm text-zinc-400">Modulo preparado.</p>
-                </div>
-              ))}
-            </section>
+            <EventModuleGrid eventId={event.id} />
           </>
         ) : null}
       </div>

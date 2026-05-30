@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../../../../components/AppShell";
+import { EventContextNav } from "../../../../components/EventContextNav";
 import { StatCard } from "../../../../components/StatCard";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase";
 
@@ -106,6 +107,8 @@ export default function ReportsPage() {
   return (
     <AppShell title="Reportes">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <EventContextNav eventId={params.id} />
+
         <header className="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:p-6">
           <Link href={`/events/${params.id}`} className="text-sm font-semibold text-emerald-300">
             Volver al evento

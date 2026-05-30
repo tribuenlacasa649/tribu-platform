@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import { AppShell } from "../../../../components/AppShell";
 import { Badge } from "../../../../components/Badge";
+import { EventContextNav } from "../../../../components/EventContextNav";
+import { QRScanner } from "../../../../components/QRScanner";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase";
 import { extractTicketToken } from "../../../../lib/tickets";
 import type { PublicTicket } from "../../../../types/database";
@@ -24,9 +26,8 @@ export default function CheckinPage() {
   const [isChecking, setIsChecking] = useState(false);
   const [result, setResult] = useState<CheckinResult | null>(null);
 
-  async function handleCheckin(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const token = extractTicketToken(input);
+  async function validateTicket(rawValue: string) {
+    const token = extractTicketToken(rawValue);
     setIsChecking(true);
     setResult(null);
 
@@ -115,7 +116,7 @@ export default function CheckinPage() {
 
     setResult({
       tone: "success",
-      title: "OK entrada valida",
+      title: "Entrada valida",
       message: "Permitir ingreso.",
       ticket: { ...ticket, status: "used", used_count: ticket.used_count + 1 },
       scannedAt: new Date().toISOString(),
@@ -123,18 +124,27 @@ export default function CheckinPage() {
     setInput("");
   }
 
+  async function handleManualCheckin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await validateTicket(input);
+  }
+
   return (
     <AppShell title="Check-in">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+        <EventContextNav eventId={params.id} />
+
         <header className="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:p-6">
           <Link href={`/events/${params.id}`} className="text-sm font-semibold text-emerald-300">
             Volver al evento
           </Link>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">Check-in</h1>
-          <p className="mt-2 text-sm text-zinc-400">Pega el token o link del QR.</p>
+          <p className="mt-2 text-sm text-zinc-400">Escanea QR o pega token/link.</p>
         </header>
 
-        <form onSubmit={handleCheckin} className="space-y-4">
+        <QRScanner onScan={validateTicket} />
+
+        <form onSubmit={handleManualCheckin} className="space-y-4">
           <input
             value={input}
             onChange={(event) => setInput(event.target.value)}
@@ -148,12 +158,6 @@ export default function CheckinPage() {
             className="min-h-14 w-full rounded-xl bg-emerald-400 px-5 text-lg font-semibold text-zinc-950 transition hover:bg-emerald-300 disabled:opacity-60"
           >
             {isChecking ? "Validando..." : "Validar entrada"}
-          </button>
-          <button
-            type="button"
-            className="min-h-12 w-full rounded-xl border border-white/10 px-5 text-base font-semibold text-zinc-400"
-          >
-            Escanear QR proximamente
           </button>
         </form>
 

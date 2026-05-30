@@ -7,6 +7,7 @@ import type { User } from "@supabase/supabase-js";
 import { createSupabaseBrowserClient } from "../lib/supabase";
 import { getUserDisplayName, internalRoleLabels } from "../lib/auth";
 import type { InternalRole } from "../types/database";
+import { getEventIdFromPathname, getEventRoute } from "../lib/routes";
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -14,17 +15,39 @@ type AppShellProps = {
   requireAuth?: boolean;
 };
 
-const navigation = [
-  { href: "/dashboard", label: "Dashboard", active: true },
-  { href: "/events", label: "Eventos", active: true },
-  { href: "/events", label: "Invitados", active: true },
-  { href: "/events", label: "Entradas", active: true },
-  { href: "/events", label: "Check-in", active: true },
-  { href: "/events", label: "Pagos", active: true },
-  { href: "#", label: "Produccion", active: false },
-  { href: "#", label: "Stock", active: false },
-  { href: "/events", label: "Reportes", active: true },
-];
+function getNavigation(eventId: string | null) {
+  return [
+    { href: "/dashboard", label: "Dashboard", active: true },
+    { href: "/events", label: "Eventos", active: true },
+    {
+      href: eventId ? getEventRoute(eventId, "guests") : "/events",
+      label: "Invitados",
+      active: true,
+    },
+    {
+      href: eventId ? getEventRoute(eventId, "tickets") : "/events",
+      label: "Entradas",
+      active: true,
+    },
+    {
+      href: eventId ? getEventRoute(eventId, "checkin") : "/events",
+      label: "Check-in",
+      active: true,
+    },
+    {
+      href: eventId ? getEventRoute(eventId, "payments") : "/events",
+      label: "Pagos",
+      active: true,
+    },
+    { href: "#", label: "Produccion", active: false },
+    { href: "#", label: "Stock", active: false },
+    {
+      href: eventId ? getEventRoute(eventId, "reports") : "/events",
+      label: "Reportes",
+      active: true,
+    },
+  ];
+}
 
 export function AppShell({
   children,
@@ -33,6 +56,8 @@ export function AppShell({
 }: AppShellProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const eventId = getEventIdFromPathname(pathname);
+  const navigation = getNavigation(eventId);
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<InternalRole | null>(null);
