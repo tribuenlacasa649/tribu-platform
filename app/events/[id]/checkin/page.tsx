@@ -134,7 +134,7 @@ export default function CheckinPage() {
   }
 
   return (
-    <AppShell title="Check-in">
+    <AppShell title="Scanner QR">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <EventContextNav eventId={params.id} />
 
@@ -142,8 +142,8 @@ export default function CheckinPage() {
           <Link href={`/events/${params.id}`} className="text-sm font-semibold text-emerald-300">
             Volver al evento
           </Link>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight">Check-in</h1>
-          <p className="mt-2 text-sm text-zinc-400">Escanea QR o pega token/link.</p>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight">Scanner QR</h1>
+          <p className="mt-2 text-sm text-zinc-400">Escanea QR o pegá token/link.</p>
         </header>
 
         <QRScanner onScan={validateTicket} disabled={isChecking} />

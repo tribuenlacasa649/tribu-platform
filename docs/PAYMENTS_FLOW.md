@@ -4,22 +4,22 @@
 
 1. Invitado abre `/p/events/[slug]`.
 2. Completa registro publico.
-3. Entra a `/p/guest/[accessToken]`.
-4. Ve alias, titular y monto sugerido.
-5. Avisa pago con:
+3. La app crea inmediatamente `public_guest` y `guest` interno.
+4. Entra a `/p/guest/[accessToken]`.
+5. Ve alias, titular, monto sugerido y referencia sugerida.
+6. Avisa pago con:
    - referencia,
-   - texto/link de comprobante,
    - o imagen del comprobante.
-6. El estado pasa a `payment_status = notified`.
-7. Produccion revisa `/events/[id]/payments`.
-8. Admin confirma pago.
-9. La app:
+7. El estado pasa a `payment_status = notified`.
+8. Produccion revisa `/events/[id]/payments`.
+9. Admin confirma pago.
+10. La app:
    - marca `payment_status = confirmed`,
    - marca `status = approved`,
-   - crea guest interno si falta,
+   - reutiliza el guest interno creado al reservar,
    - genera tickets segun `ticket_quantity`,
    - registra/actualiza payment.
-10. Invitado ve QR en su portal publico.
+11. Invitado ve QR en su portal publico.
 
 ## Estados
 
@@ -45,6 +45,11 @@ Ticket:
 ## Comprobante
 
 La imagen se sube a Supabase Storage bucket `payment-proofs`.
+
+El boton `Ya pague` solo se habilita si:
+
+- `payment_reference` tiene 4 caracteres o mas,
+- o hay foto cargada.
 
 Columnas usadas:
 

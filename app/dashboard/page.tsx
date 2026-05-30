@@ -89,7 +89,7 @@ export default function DashboardPage() {
           <StatCard label="Eventos activos" value={stats.activeEvents} />
           <StatCard label="Invitados totales" value={stats.totalGuests} />
           <StatCard label="Entradas emitidas" value={stats.tickets} helper="Preparado" />
-          <StatCard label="Check-ins" value={stats.checkins} helper="Preparado" />
+          <StatCard label="Scanner OK" value={stats.checkins} helper="Preparado" />
         </section>
 
         <section className="grid gap-4 md:grid-cols-3">

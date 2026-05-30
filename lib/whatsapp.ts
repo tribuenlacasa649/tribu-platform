@@ -25,8 +25,25 @@ export function createWhatsAppUrl(phone: string, message: string) {
   return `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
 }
 
-export function createTicketWhatsAppMessage(name: string, ticketUrls: string[]) {
-  const ticketText = ticketUrls.map((url, index) => `Entrada ${index + 1}: ${url}`).join("\n");
+type TicketWhatsAppEvent = {
+  title?: string | null;
+  dateLabel?: string;
+  location?: string | null;
+};
 
-  return `Hola ${name}, tu pago fue confirmado. Acá está tu entrada:\n${ticketText}`;
+export function createTicketWhatsAppMessage(
+  name: string,
+  ticketUrls: string[],
+  event?: TicketWhatsAppEvent
+) {
+  const ticketText = ticketUrls.map((url, index) => `Entrada ${index + 1}: ${url}`).join("\n");
+  const eventLines = [
+    event?.title ? `Evento: ${event.title}` : null,
+    event?.dateLabel ? `Fecha: ${event.dateLabel}` : null,
+    event?.location ? `Ubicación: ${event.location}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return `Hola ${name}.\n\nTu pago fue confirmado.\n\n${eventLines ? `${eventLines}\n\n` : ""}Tu entrada:\n${ticketText}\n\nNos vemos.`;
 }

@@ -26,7 +26,7 @@ const moduleLabels: Record<EventModuleKey, string> = {
   summary: "Resumen",
   guests: "Invitados",
   tickets: "Entradas",
-  checkin: "Check-in",
+  checkin: "Scanner QR",
   payments: "Pagos",
   reports: "Reportes",
 };
@@ -35,7 +35,7 @@ const moduleDescriptions: Record<EventModuleKey, string> = {
   summary: "Estado general del evento.",
   guests: "Lista, preferencias y entradas.",
   tickets: "Generar y revisar QR.",
-  checkin: "Validar ingresos en puerta.",
+  checkin: "Validar QR en puerta.",
   payments: "Control manual de pagos.",
   reports: "Asistencia y pagos.",
 };

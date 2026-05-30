@@ -8,12 +8,13 @@
 - Gestion de invitados internos.
 - Entradas QR por evento.
 - Ticket publico por token.
-- Check-in manual y scanner con camara usando `html5-qrcode`.
+- Scanner QR manual y con camara usando `html5-qrcode`.
 - Pagos manuales por transferencia.
 - Registro publico sin password.
 - Portal publico del invitado por access token.
 - Solicitudes publicas por evento.
-- Confirmacion manual de pago con generacion automatica de guest interno y tickets.
+- Registro publico crea `public_guest` y `guest` interno inmediatamente.
+- Confirmacion manual de pago con generacion automatica de tickets.
 - Fallback gratuito de WhatsApp con `wa.me`.
 
 ## Rutas principales
@@ -22,7 +23,7 @@
 - Evento: `/events/[id]`.
 - Invitados: `/events/[id]/guests`.
 - Entradas: `/events/[id]/tickets`.
-- Check-in: `/events/[id]/checkin`.
+- Scanner QR: `/events/[id]/checkin`.
 - Pagos: `/events/[id]/payments`.
 - Reportes: `/events/[id]/reports`.
 - Solicitudes publicas: `/events/[id]/public-guests`.
@@ -60,7 +61,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 - Avisar pago con referencia y/o imagen.
 - Confirmar pago desde admin.
 - Ver QR en portal publico.
-- Probar check-in manual con token.
+- Probar Scanner QR manual con token.
 - Probar scanner en celular con HTTPS.
 
 ## Pendientes recomendados

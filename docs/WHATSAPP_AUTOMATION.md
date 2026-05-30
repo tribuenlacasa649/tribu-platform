@@ -1,50 +1,50 @@
-# WhatsApp automation
+# WhatsApp Automation
 
-## Estado actual
+## Release Candidate
 
-La app usa fallback gratuito con links `wa.me`.
+El envio automatico real de WhatsApp requiere Meta WhatsApp Cloud API, Twilio u otro proveedor. Esas opciones pueden requerir aprobacion, plantillas, credenciales privadas y/o costo. Para no bloquear el evento, la app usa hoy el fallback gratuito y estable:
 
-Cuando el pago esta confirmado y hay tickets generados, admin ve:
+1. Produccion confirma el pago en `/events/[id]/payments`.
+2. La app crea los tickets faltantes.
+3. Se arma un mensaje con evento, fecha, ubicacion y link de entrada.
+4. El boton `Enviar QR por WhatsApp` abre `wa.me` con el mensaje listo.
+5. Produccion solo toca enviar.
 
-- Enviar QR por WhatsApp.
-- Copiar mensaje.
-- Copiar link del ticket.
+Tambien quedan botones para copiar mensaje y copiar ticket.
 
-El mensaje incluye el nombre del invitado y los links `/ticket/[token]`.
-
-## Por que no es automatico real todavia
-
-WhatsApp automatico real requiere una API externa y credenciales privadas. No se deben poner tokens en frontend.
-
-Opciones reales:
-
-- Meta WhatsApp Cloud API.
-- Twilio WhatsApp.
-- WATI.
-- Z-API u otro proveedor.
-
-Estas opciones pueden requerir aprobacion, costos, numero emisor y plantillas.
-
-## Variables futuras
-
-```bash
-WHATSAPP_API_TOKEN=...
-WHATSAPP_PHONE_NUMBER_ID=...
-WHATSAPP_BUSINESS_ACCOUNT_ID=...
-```
-
-## Proximo paso tecnico
-
-Crear una API route segura, por ejemplo:
+## Mensaje actual
 
 ```text
-app/api/whatsapp/send-ticket/route.ts
+Hola {nombre}.
+
+Tu pago fue confirmado.
+
+Evento: {evento}
+Fecha: {fecha}
+Ubicacion: {ubicacion}
+
+Tu entrada:
+Entrada 1: {ticketUrl}
+
+Nos vemos.
 ```
 
-Esa ruta debe:
+## Automatizacion real futura
 
-- Validar sesion admin.
-- Leer tickets confirmados.
-- Construir mensaje.
-- Llamar a la API de WhatsApp desde backend.
-- Nunca exponer credenciales al navegador.
+Para enviar sin intervencion humana:
+
+- Crear una cuenta/app en Meta Developers.
+- Configurar WhatsApp Cloud API.
+- Validar numero emisor.
+- Crear plantilla aprobada si se envia fuera de la ventana de 24 horas.
+- Implementar un endpoint backend seguro que llame a Meta.
+
+Variables futuras:
+
+```env
+WHATSAPP_API_TOKEN=
+WHATSAPP_PHONE_NUMBER_ID=
+WHATSAPP_TEMPLATE_NAME=
+```
+
+No poner estas claves en frontend ni en archivos versionados.

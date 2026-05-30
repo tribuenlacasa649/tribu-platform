@@ -26,6 +26,7 @@ export async function confirmPublicGuestPayment(
   publicGuest: PublicGuestRecord,
   event: Pick<EventRecord, "id" | "ticket_price"> | null
 ) {
+  const confirmedAt = new Date().toISOString();
   let internalGuestId = publicGuest.internal_guest_id;
 
   if (!internalGuestId) {
@@ -84,22 +85,101 @@ export async function confirmPublicGuestPayment(
 
   const amount = getSuggestedPaymentAmount(publicGuest, event);
 
-  const { error: paymentError } = await supabase.from("payments").upsert(
-    {
-      event_id: publicGuest.event_id,
-      public_guest_id: publicGuest.id,
-      guest_id: internalGuestId,
-      amount,
-      status: "confirmed",
-      method: "manual_transfer",
-      reference: publicGuest.payment_reference,
-      proof: publicGuest.payment_proof,
-      proof_file_url: publicGuest.payment_proof_file_url,
-      confirmed_at: new Date().toISOString(),
-      rejected_at: null,
-    },
-    { onConflict: "public_guest_id" }
-  );
+  const paymentPayload = {
+    event_id: publicGuest.event_id,
+    public_guest_id: publicGuest.id,
+    guest_id: internalGuestId,
+    amount,
+    status: "confirmed",
+    method: "manual_transfer",
+    reference: publicGuest.payment_reference,
+    proof: publicGuest.payment_proof,
+    proof_file_url: publicGuest.payment_proof_file_url,
+    confirmed_at: confirmedAt,
+    rejected_at: null,
+  };
+
+  const { data: existingPayment, error: existingPaymentError } = await supabase
+    .from("payments")
+    .select("id")
+    .eq("public_guest_id", publicGuest.id)
+    .maybeSingle();
+
+  if (existingPaymentError) {
+    throw new Error(existingPaymentError.message);
+  }
+
+  const paymentRequest = existingPayment
+    ? supabase.from("payments").update(paymentPayload).eq("id", existingPayment.id)
+    : supabase.from("payments").insert(paymentPayload);
+
+  const { error: paymentError } = await paymentRequest;
+
+  if (paymentError) {
+    throw new Error(paymentError.message);
+  }
+
+  const { error: syncTicketsError } = await supabase
+    .from("tickets")
+    .update({ guest_id: internalGuestId })
+    .eq("public_guest_id", publicGuest.id)
+    .is("guest_id", null);
+
+  if (syncTicketsError) {
+    throw new Error(syncTicketsError.message);
+  }
+
+  const { error: updateError } = await supabase
+    .from("public_guests")
+    .update({
+      status: "approved",
+      payment_status: "confirmed",
+      payment_confirmed_at: confirmedAt,
+      internal_guest_id: internalGuestId,
+    })
+    .eq("id", publicGuest.id);
+
+  if (updateError) {
+    throw new Error(updateError.message);
+  }
+}
+
+export async function rejectPublicGuestPayment(
+  supabase: SupabaseClient,
+  publicGuest: PublicGuestRecord,
+  event: Pick<EventRecord, "id" | "ticket_price"> | null
+) {
+  const rejectedAt = new Date().toISOString();
+  const amount = getSuggestedPaymentAmount(publicGuest, event);
+  const paymentPayload = {
+    event_id: publicGuest.event_id,
+    public_guest_id: publicGuest.id,
+    guest_id: publicGuest.internal_guest_id,
+    amount,
+    status: "rejected",
+    method: "manual_transfer",
+    reference: publicGuest.payment_reference,
+    proof: publicGuest.payment_proof,
+    proof_file_url: publicGuest.payment_proof_file_url,
+    confirmed_at: null,
+    rejected_at: rejectedAt,
+  };
+
+  const { data: existingPayment, error: existingPaymentError } = await supabase
+    .from("payments")
+    .select("id")
+    .eq("public_guest_id", publicGuest.id)
+    .maybeSingle();
+
+  if (existingPaymentError) {
+    throw new Error(existingPaymentError.message);
+  }
+
+  const paymentRequest = existingPayment
+    ? supabase.from("payments").update(paymentPayload).eq("id", existingPayment.id)
+    : supabase.from("payments").insert(paymentPayload);
+
+  const { error: paymentError } = await paymentRequest;
 
   if (paymentError) {
     throw new Error(paymentError.message);
@@ -108,10 +188,50 @@ export async function confirmPublicGuestPayment(
   const { error: updateError } = await supabase
     .from("public_guests")
     .update({
-      status: "approved",
-      payment_status: "confirmed",
-      payment_confirmed_at: new Date().toISOString(),
-      internal_guest_id: internalGuestId,
+      payment_status: "rejected",
+      payment_confirmed_at: null,
+    })
+    .eq("id", publicGuest.id);
+
+  if (updateError) {
+    throw new Error(updateError.message);
+  }
+}
+
+export async function resetPublicGuestPayment(
+  supabase: SupabaseClient,
+  publicGuest: PublicGuestRecord
+) {
+  const { data: existingPayment, error: existingPaymentError } = await supabase
+    .from("payments")
+    .select("id")
+    .eq("public_guest_id", publicGuest.id)
+    .maybeSingle();
+
+  if (existingPaymentError) {
+    throw new Error(existingPaymentError.message);
+  }
+
+  if (existingPayment) {
+    const { error: paymentError } = await supabase
+      .from("payments")
+      .update({
+        status: "pending",
+        confirmed_at: null,
+        rejected_at: null,
+      })
+      .eq("id", existingPayment.id);
+
+    if (paymentError) {
+      throw new Error(paymentError.message);
+    }
+  }
+
+  const { error: updateError } = await supabase
+    .from("public_guests")
+    .update({
+      payment_status: "pending",
+      payment_confirmed_at: null,
     })
     .eq("id", publicGuest.id);
 

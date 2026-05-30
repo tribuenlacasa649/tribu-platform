@@ -34,27 +34,30 @@ export function PublicGuestForm({ eventId }: PublicGuestFormProps) {
     setIsSaving(true);
     const accessToken = createAccessToken();
 
-    const { error: requestError } = await supabase.from("public_guests").insert({
-      event_id: eventId,
-      full_name: fullName.trim(),
-      phone: phone.trim(),
-      instagram: instagram.trim() || null,
-      ticket_quantity: Math.max(1, Number(ticketQuantity) || 1),
-      food_preferences: foodPreferences.trim() || null,
-      notes: notes.trim() || null,
-      status: "pending",
-      payment_status: "pending",
-      access_token: accessToken,
-    });
+    const payload = {
+      new_event_id: eventId,
+      new_full_name: fullName.trim(),
+      new_phone: phone.trim(),
+      new_instagram: instagram.trim() || null,
+      new_ticket_quantity: Math.max(1, Number(ticketQuantity) || 1),
+      new_food_preferences: foodPreferences.trim() || null,
+      new_notes: notes.trim() || null,
+      new_access_token: accessToken,
+    };
 
-    setIsSaving(false);
+    const { data: rpcData, error: rpcError } = await supabase.rpc(
+      "create_public_guest_registration",
+      payload
+    );
 
-    if (requestError) {
-      setError(requestError.message);
+    if (rpcError) {
+      setIsSaving(false);
+      setError(rpcError.message);
       return;
     }
 
-    router.push(getPublicGuestRoute(accessToken));
+    setIsSaving(false);
+    router.push(getPublicGuestRoute((rpcData as string | null) ?? accessToken));
   }
 
   return (

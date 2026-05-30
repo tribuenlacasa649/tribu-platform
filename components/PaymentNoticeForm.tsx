@@ -13,8 +13,8 @@ type PaymentNoticeFormProps = {
   onNotified: () => void;
 };
 
-const paymentAlias = "TRIBU.EVENTOS";
-const paymentHolder = "Tribu Platform";
+const paymentAlias = "An.enfotos";
+const paymentHolder = "Ana Laura Harboure";
 const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
 const maxFileSize = 5 * 1024 * 1024;
 
@@ -86,8 +86,8 @@ export function PaymentNoticeForm({
     event.preventDefault();
     setError("");
 
-    if (!reference.trim() && !proof.trim() && !selectedFile && !proofFileUrl) {
-      setError("Agregá referencia, comprobante escrito o foto.");
+    if (!canSubmit) {
+      setError("Agregá una referencia de al menos 4 caracteres o una foto del comprobante.");
       return;
     }
 
@@ -117,7 +117,11 @@ export function PaymentNoticeForm({
   }
 
   const amountLabel = amount > 0 ? `$${Math.round(amount).toLocaleString("es-AR")}` : "A confirmar";
-  const canSubmit = Boolean(reference.trim() || proof.trim() || selectedFile || proofFileUrl);
+  const hasValidReference = reference.trim().length >= 4;
+  const hasProofFile = Boolean(selectedFile || proofFileUrl);
+  const canSubmit = hasValidReference || hasProofFile;
+  const showValidationWarning = !canSubmit && (reference.length > 0 || proof.length > 0);
+  const suggestedReference = `TRIBU-${accessToken.slice(0, 8).toUpperCase()}`;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
@@ -144,6 +148,13 @@ export function PaymentNoticeForm({
           <p className="text-sm text-zinc-500">Monto</p>
           <p className="mt-1 text-lg font-semibold">{amountLabel}</p>
         </div>
+        <div className="rounded-xl bg-zinc-950/70 p-4">
+          <p className="text-sm text-zinc-500">Referencia sugerida</p>
+          <p className="mt-1 break-all text-lg font-semibold">{suggestedReference}</p>
+          <div className="mt-3">
+            <CopyButton value={suggestedReference} label="Copiar referencia" />
+          </div>
+        </div>
       </div>
 
       {error ? (
@@ -159,10 +170,22 @@ export function PaymentNoticeForm({
         <input
           id="payment_reference"
           value={reference}
-          onChange={(event) => setReference(event.target.value)}
-          className="min-h-12 w-full rounded-xl border border-white/10 bg-zinc-950 px-4 text-white outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+          onChange={(event) => {
+            setReference(event.target.value);
+            setError("");
+          }}
+          className={`min-h-12 w-full rounded-xl border bg-zinc-950 px-4 text-white outline-none focus:ring-2 ${
+            showValidationWarning
+              ? "border-red-400 focus:border-red-300 focus:ring-red-400/20"
+              : "border-white/10 focus:border-emerald-400 focus:ring-emerald-400/20"
+          }`}
           placeholder="Ej: 123456789"
         />
+        {showValidationWarning ? (
+          <p className="text-xs font-semibold text-red-200">
+            La referencia debe tener al menos 4 caracteres, salvo que subas una foto.
+          </p>
+        ) : null}
       </div>
 
       <div className="space-y-2">
@@ -172,7 +195,10 @@ export function PaymentNoticeForm({
         <textarea
           id="payment_proof"
           value={proof}
-          onChange={(event) => setProof(event.target.value)}
+          onChange={(event) => {
+            setProof(event.target.value);
+            setError("");
+          }}
           rows={3}
           className="w-full rounded-xl border border-white/10 bg-zinc-950 px-4 py-3 text-white outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
           placeholder="Pegá el texto, link o detalle del comprobante"

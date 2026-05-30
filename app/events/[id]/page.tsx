@@ -119,10 +119,10 @@ export default function EventDetailPage() {
 
   return (
     <AppShell title="Detalle evento">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
         <EventContextNav eventId={params.id} />
 
-        <header className="space-y-4">
+        <header className="space-y-3">
           <Link href="/events" className="text-sm font-semibold text-emerald-300">
             Volver a eventos
           </Link>
@@ -132,7 +132,7 @@ export default function EventDetailPage() {
               Cargando evento...
             </div>
           ) : event ? (
-            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:p-6">
+            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -143,15 +143,15 @@ export default function EventDetailPage() {
                       Creado {formatDateTime(event.created_at)}
                     </span>
                   </div>
-                  <h1 className="mt-3 text-3xl font-semibold tracking-tight">
+                  <h1 className="mt-2 text-2xl font-semibold tracking-tight">
                     {event.name}
                   </h1>
                   <p className="mt-2 text-zinc-400">{event.location || "Sin ubicacion"}</p>
                 </div>
-                <div className="grid gap-3 sm:min-w-48">
+                <div className="grid grid-cols-2 gap-2 sm:min-w-48">
                   <Link
                     href={`/events/${event.id}/edit`}
-                    className="flex min-h-12 items-center justify-center rounded-lg border border-white/10 px-5 text-base font-semibold text-zinc-100 transition hover:bg-white/5"
+                    className="flex min-h-10 items-center justify-center rounded-lg border border-white/10 px-4 text-sm font-semibold text-zinc-100 transition hover:bg-white/5"
                   >
                     Editar
                   </Link>
@@ -159,7 +159,7 @@ export default function EventDetailPage() {
                     type="button"
                     onClick={handleDelete}
                     disabled={isDeleting}
-                    className="min-h-12 rounded-lg bg-red-500 px-5 text-base font-semibold text-white transition hover:bg-red-400 disabled:opacity-60"
+                    className="min-h-10 rounded-lg bg-red-500 px-4 text-sm font-semibold text-white transition hover:bg-red-400 disabled:opacity-60"
                   >
                     {isDeleting ? "Eliminando..." : "Eliminar"}
                   </button>
@@ -180,7 +180,7 @@ export default function EventDetailPage() {
             <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <StatCard label="Invitados" value={stats.guests} />
               <StatCard label="Tickets" value={stats.tickets} />
-              <StatCard label="Check-ins" value={stats.usedTickets} />
+              <StatCard label="Scanner OK" value={stats.usedTickets} />
               <StatCard label="Pagos OK" value={stats.confirmedPayments} />
             </section>
 
@@ -212,7 +212,7 @@ export default function EventDetailPage() {
               </div>
             </section>
 
-            <section className="grid gap-4 md:grid-cols-3">
+            <section className="grid gap-3 md:grid-cols-3">
               <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
                 <p className="text-sm text-zinc-500">Inicio</p>
                 <p className="mt-2 font-semibold text-zinc-100">

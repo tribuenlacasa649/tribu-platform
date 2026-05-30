@@ -119,7 +119,7 @@ export default function EventsPage() {
                 <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium text-zinc-400">
                   <span className="rounded-full bg-zinc-900 px-3 py-1">Invitados</span>
                   <span className="rounded-full bg-zinc-900 px-3 py-1">QR</span>
-                  <span className="rounded-full bg-zinc-900 px-3 py-1">Check-in</span>
+                  <span className="rounded-full bg-zinc-900 px-3 py-1">Scanner QR</span>
                 </div>
               </Link>
             ))}

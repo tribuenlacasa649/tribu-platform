@@ -31,7 +31,7 @@ function getNavigation(eventId: string | null) {
     },
     {
       href: eventId ? getEventRoute(eventId, "checkin") : "/events",
-      label: "Check-in",
+      label: "Scanner QR",
       active: true,
     },
     {

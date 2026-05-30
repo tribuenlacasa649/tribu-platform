@@ -8,7 +8,13 @@ import { Badge } from "../../../../components/Badge";
 import { CopyButton } from "../../../../components/CopyButton";
 import { EmptyState } from "../../../../components/EmptyState";
 import { EventContextNav } from "../../../../components/EventContextNav";
-import { confirmPublicGuestPayment, formatMoney, getSuggestedPaymentAmount } from "../../../../lib/payments";
+import {
+  confirmPublicGuestPayment,
+  formatMoney,
+  getSuggestedPaymentAmount,
+  rejectPublicGuestPayment,
+  resetPublicGuestPayment,
+} from "../../../../lib/payments";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase";
 import { getPublicTicketUrl } from "../../../../lib/tickets";
 import { createTicketWhatsAppMessage, createWhatsAppUrl } from "../../../../lib/whatsapp";
@@ -34,6 +40,19 @@ function getAbsoluteTicketUrl(token: string) {
   }
 
   return `${window.location.origin}/ticket/${token}`;
+}
+
+function formatEventDate(value: string | null | undefined) {
+  if (!value) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("es-AR", {
+    day: "numeric",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
 }
 
 export default function PaymentsPage() {
@@ -183,24 +202,22 @@ export default function PaymentsPage() {
     setError("");
     setActiveId(request.id);
 
-    const { error: requestError } = await supabase
-      .from("public_guests")
-      .update({
-        payment_status: status,
-        payment_confirmed_at: status === "confirmed" ? new Date().toISOString() : null,
-        status: status === "confirmed" ? "approved" : request.status,
-      })
-      .eq("id", request.id);
+    try {
+      if (status === "rejected") {
+        await rejectPublicGuestPayment(supabase, request, event);
+      } else if (status === "pending") {
+        await resetPublicGuestPayment(supabase, request);
+      } else if (status === "confirmed") {
+        await confirmPublicGuestPayment(supabase, request, event);
+      }
 
-    if (requestError) {
-      setError(requestError.message);
+      await loadPayments();
+      router.refresh();
+    } catch (statusError) {
+      setError(statusError instanceof Error ? statusError.message : "No se pudo actualizar.");
+    } finally {
       setActiveId("");
-      return;
     }
-
-    await loadPayments();
-    setActiveId("");
-    router.refresh();
   }
 
   const counts = {
@@ -212,15 +229,17 @@ export default function PaymentsPage() {
 
   return (
     <AppShell title="Pagos">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
         <EventContextNav eventId={params.id} />
 
-        <header className="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:p-6">
-          <Link href={`/events/${params.id}`} className="text-sm font-semibold text-emerald-300">
-            Volver al evento
-          </Link>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight">Pagos</h1>
-          <p className="mt-2 text-sm text-zinc-400">Validación manual, QR y WhatsApp.</p>
+        <header className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <Link href={`/events/${params.id}`} className="text-sm font-semibold text-emerald-300">
+              Evento / Pagos
+            </Link>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight">Pagos y QR</h1>
+            <p className="mt-1 text-sm text-zinc-400">Confirmá, generá QR y enviá WhatsApp.</p>
+          </div>
         </header>
 
         {error ? (
@@ -250,7 +269,11 @@ export default function PaymentsPage() {
               const amount = getSuggestedPaymentAmount(request, event);
               const tickets = ticketsByPublicGuest[request.id] ?? [];
               const ticketUrls = tickets.map((ticket) => getAbsoluteTicketUrl(ticket.token));
-              const whatsappMessage = createTicketWhatsAppMessage(request.full_name, ticketUrls);
+              const whatsappMessage = createTicketWhatsAppMessage(request.full_name, ticketUrls, {
+                title: event?.public_title || event?.name,
+                dateLabel: formatEventDate(event?.starts_at),
+                location: event?.location,
+              });
               const whatsappUrl = ticketUrls.length
                 ? createWhatsAppUrl(request.phone, whatsappMessage)
                 : "";
@@ -302,14 +325,16 @@ export default function PaymentsPage() {
                   </div>
 
                   <div className="mt-4 grid gap-2">
-                    <button
-                      type="button"
-                      onClick={() => confirmPayment(request)}
-                      disabled={activeId === request.id}
-                      className="min-h-11 rounded-lg bg-emerald-400 px-4 text-sm font-semibold text-zinc-950 transition disabled:opacity-60"
-                    >
-                      {activeId === request.id ? "Procesando..." : "Confirmar y generar QR"}
-                    </button>
+                    {request.payment_status !== "confirmed" ? (
+                      <button
+                        type="button"
+                        onClick={() => confirmPayment(request)}
+                        disabled={activeId === request.id}
+                        className="min-h-11 rounded-lg bg-emerald-400 px-4 text-sm font-semibold text-zinc-950 transition disabled:opacity-60"
+                      >
+                        {activeId === request.id ? "Procesando..." : "Confirmar y generar QR"}
+                      </button>
+                    ) : null}
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
