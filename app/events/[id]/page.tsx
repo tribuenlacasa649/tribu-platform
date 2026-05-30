@@ -23,14 +23,35 @@ function formatDateTime(value: string | null) {
   }).format(new Date(value));
 }
 
-const upcomingModules = [
-  "Entradas QR",
-  "Check-in",
-  "Pagos",
-  "Produccion",
-  "Stock",
-  "Reportes",
+const activeModules = [
+  {
+    label: "Invitados",
+    href: "guests",
+    description: "Lista, preferencias y entradas por persona.",
+  },
+  {
+    label: "Entradas QR",
+    href: "tickets",
+    description: "Generar y revisar QR por invitado.",
+  },
+  {
+    label: "Check-in",
+    href: "checkin",
+    description: "Validar tickets desde puerta.",
+  },
+  {
+    label: "Pagos",
+    href: "payments",
+    description: "Control manual de estados de pago.",
+  },
+  {
+    label: "Reportes",
+    href: "reports",
+    description: "Resumen de asistencia y pagos.",
+  },
 ];
+
+const upcomingModules = ["Produccion", "Stock"];
 
 export default function EventDetailPage() {
   const params = useParams<{ id: string }>();
@@ -159,14 +180,17 @@ export default function EventDetailPage() {
             </section>
 
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <Link
-                href={`/events/${event.id}/guests`}
-                className="rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-5 transition hover:bg-emerald-400/15"
-              >
-                <Badge tone="success">Activo</Badge>
-                <h2 className="mt-3 text-xl font-semibold">Invitados</h2>
-                <p className="mt-2 text-sm text-zinc-300">Gestionar lista y preferencias.</p>
-              </Link>
+              {activeModules.map((module) => (
+                <Link
+                  key={module.href}
+                  href={`/events/${event.id}/${module.href}`}
+                  className="rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-5 transition hover:bg-emerald-400/15"
+                >
+                  <Badge tone="success">Activo</Badge>
+                  <h2 className="mt-3 text-xl font-semibold">{module.label}</h2>
+                  <p className="mt-2 text-sm text-zinc-300">{module.description}</p>
+                </Link>
+              ))}
               {upcomingModules.map((module) => (
                 <div
                   key={module}

@@ -5,7 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createSupabaseBrowserClient } from "../lib/supabase";
-import { getUserDisplayName } from "../lib/auth";
+import { getUserDisplayName, internalRoleLabels } from "../lib/auth";
+import type { InternalRole } from "../types/database";
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -17,12 +18,12 @@ const navigation = [
   { href: "/dashboard", label: "Dashboard", active: true },
   { href: "/events", label: "Eventos", active: true },
   { href: "/events", label: "Invitados", active: true },
-  { href: "#", label: "Entradas", active: false },
-  { href: "#", label: "Check-in", active: false },
-  { href: "#", label: "Pagos", active: false },
+  { href: "/events", label: "Entradas", active: true },
+  { href: "/events", label: "Check-in", active: true },
+  { href: "/events", label: "Pagos", active: true },
   { href: "#", label: "Produccion", active: false },
   { href: "#", label: "Stock", active: false },
-  { href: "#", label: "Reportes", active: false },
+  { href: "/events", label: "Reportes", active: true },
 ];
 
 export function AppShell({
@@ -34,10 +35,23 @@ export function AppShell({
   const pathname = usePathname();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [user, setUser] = useState<User | null>(null);
+  const [role, setRole] = useState<InternalRole | null>(null);
   const [isCheckingSession, setIsCheckingSession] = useState(requireAuth);
 
   useEffect(() => {
     let isMounted = true;
+
+    async function loadProfile(userId: string) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (isMounted && data?.role) {
+        setRole(data.role as InternalRole);
+      }
+    }
 
     async function checkSession() {
       const { data } = await supabase.auth.getSession();
@@ -53,6 +67,9 @@ export function AppShell({
       }
 
       setUser(sessionUser);
+      if (sessionUser) {
+        await loadProfile(sessionUser.id);
+      }
       setIsCheckingSession(false);
     }
 
@@ -66,6 +83,12 @@ export function AppShell({
 
       if (requireAuth && !sessionUser) {
         router.replace("/login");
+      }
+
+      if (sessionUser) {
+        loadProfile(sessionUser.id);
+      } else {
+        setRole(null);
       }
     });
 
@@ -136,6 +159,7 @@ export function AppShell({
                 </p>
                 <p className="text-sm text-zinc-400">
                   {getUserDisplayName(user)}
+                  {role ? ` · ${internalRoleLabels[role]}` : ""}
                 </p>
               </div>
               <button

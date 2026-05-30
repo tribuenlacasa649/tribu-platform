@@ -4,9 +4,9 @@ export type GuestStatus = "active" | "cancelled" | "deleted";
 
 export type InternalRole = "admin" | "production" | "door" | "cash" | "comms";
 
-export type TicketStatus = "active" | "cancelled" | "used";
+export type TicketStatus = "available" | "used" | "cancelled";
 
-export type PaymentStatus = "pending" | "paid" | "cancelled" | "refunded";
+export type PaymentStatus = "pending" | "notified" | "confirmed" | "rejected";
 
 export type ProfileRecord = {
   id: string;
@@ -74,4 +74,25 @@ export type TicketScanRecord = {
   scanned_at: string;
   result: string;
   note: string | null;
+};
+
+export type PaymentRecord = {
+  id: string;
+  event_id: string;
+  guest_id: string | null;
+  amount: number;
+  status: PaymentStatus;
+  method: string | null;
+  reference: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
+export type TicketWithGuest = TicketRecord & {
+  guests: Pick<GuestRecord, "id" | "name" | "contact"> | null;
+};
+
+export type PublicTicket = TicketRecord & {
+  events: Pick<EventRecord, "id" | "name" | "location" | "starts_at"> | null;
+  guests: Pick<GuestRecord, "id" | "name" | "contact"> | null;
 };
