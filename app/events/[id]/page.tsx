@@ -1,80 +1,92 @@
-import { supabase } from "@/lib/supabase";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { deleteEvent } from "../actions";
+import { createSupabaseServerClient } from "../../../lib/supabase/server";
+import type { EventRecord } from "../../../types/event";
 
-type PageProps = {
-  params: Promise<{ id: string }>;
-};
+export const dynamic = "force-dynamic";
 
-export default async function EventDetailPage({ params }: PageProps) {
-  const { id } = await params;
-
-  const { data: event, error } = await supabase
+async function getEvent(id: string): Promise<EventRecord | null> {
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase
     .from("events")
-    .select("*")
+    .select("id, name, description, location, created_at")
     .eq("id", id)
     .single();
 
-  if (error || !event) {
-    return (
-      <main className="min-h-screen bg-neutral-950 px-6 py-10 text-white">
-        <a href="/events" className="text-sm text-emerald-400">← Volver</a>
-        <h1 className="mt-6 text-3xl font-bold">Evento no encontrado</h1>
-        <p className="mt-3 text-neutral-400">{error?.message}</p>
-      </main>
-    );
+  if (error) {
+    return null;
   }
 
+  return data;
+}
+
+type EventDetailPageProps = {
+  params: Promise<{ id: string }>;
+};
+
+export default async function EventDetailPage({ params }: EventDetailPageProps) {
+  const { id } = await params;
+  const event = await getEvent(id);
+
+  if (!event) {
+    notFound();
+  }
+
+  const deleteAction = deleteEvent.bind(null, event.id);
+
   return (
-    <main className="min-h-screen bg-neutral-950 px-6 py-10 text-white">
-      <section className="mx-auto max-w-6xl">
-        <a href="/events" className="text-sm text-emerald-400">← Volver a eventos</a>
+    <main className="mx-auto w-full max-w-5xl px-6 py-10">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <Link href="/events" className="text-sm font-medium text-slate-600">
+          Volver a eventos
+        </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href={`/events/${event.id}/edit`}
+            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50"
+          >
+            Editar
+          </Link>
+          <form action={deleteAction}>
+            <button
+              type="submit"
+              className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
+            >
+              Eliminar
+            </button>
+          </form>
+        </div>
+      </div>
 
-        <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-8">
-          <p className="text-sm uppercase tracking-[0.3em] text-emerald-400">Evento</p>
-          <h1 className="mt-3 text-5xl font-bold">{event.name}</h1>
-          <p className="mt-4 max-w-2xl text-neutral-300">{event.description || "Sin descripción"}</p>
-
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl bg-black/30 p-5">
-              <p className="text-sm text-neutral-400">Ubicación</p>
-              <p className="mt-2 text-lg font-semibold">{event.location || "Sin ubicación"}</p>
-            </div>
-
-            <div className="rounded-2xl bg-black/30 p-5">
-              <p className="text-sm text-neutral-400">Estado</p>
-              <p className="mt-2 text-lg font-semibold">{event.status}</p>
-            </div>
-
-            <div className="rounded-2xl bg-black/30 p-5">
-              <p className="text-sm text-neutral-400">Creado</p>
-              <p className="mt-2 text-lg font-semibold">
-                {new Date(event.created_at).toLocaleDateString("es-AR")}
-              </p>
-            </div>
-          </div>
+      <article className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-950">
+            {event.name}
+          </h1>
+          <p className="mt-2 text-sm text-slate-500">
+            Creado el {new Date(event.created_at).toLocaleDateString("es-AR")}
+          </p>
         </div>
 
-        <div className="mt-8 grid gap-4 md:grid-cols-4">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 opacity-60">
-            <h2 className="text-xl font-semibold">Invitados</h2>
-            <p className="mt-2 text-sm text-neutral-400">Próximo paso.</p>
-          </div>
+        {event.location ? (
+          <section>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+              Ubicacion
+            </h2>
+            <p className="mt-2 text-slate-900">{event.location}</p>
+          </section>
+        ) : null}
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 opacity-60">
-            <h2 className="text-xl font-semibold">Entradas QR</h2>
-            <p className="mt-2 text-sm text-neutral-400">Próximamente.</p>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 opacity-60">
-            <h2 className="text-xl font-semibold">Check-in</h2>
-            <p className="mt-2 text-sm text-neutral-400">Próximamente.</p>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 opacity-60">
-            <h2 className="text-xl font-semibold">Pagos</h2>
-            <p className="mt-2 text-sm text-neutral-400">Próximamente.</p>
-          </div>
-        </div>
-      </section>
+        <section>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            Descripcion
+          </h2>
+          <p className="mt-2 whitespace-pre-wrap text-slate-900">
+            {event.description || "Sin descripcion."}
+          </p>
+        </section>
+      </article>
     </main>
   );
 }

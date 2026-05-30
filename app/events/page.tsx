@@ -1,54 +1,81 @@
-import { supabase } from "@/lib/supabase";
-import type { Event } from "@/types/database";
+import Link from "next/link";
+import { createSupabaseServerClient } from "../../lib/supabase/server";
+import type { EventRecord } from "../../types/event";
 
-export default async function EventsPage() {
+export const dynamic = "force-dynamic";
+
+async function getEvents(): Promise<EventRecord[]> {
+  const supabase = createSupabaseServerClient();
   const { data, error } = await supabase
     .from("events")
-    .select("*")
+    .select("id, name, description, location, created_at")
     .order("created_at", { ascending: false });
 
-  const events = (data || []) as Event[];
+  if (error) {
+    throw new Error(`No se pudieron cargar los eventos: ${error.message}`);
+  }
+
+  return data ?? [];
+}
+
+export default async function EventsPage() {
+  const events = await getEvents();
 
   return (
-    <main className="min-h-screen bg-neutral-950 px-6 py-10 text-white">
-      <section className="mx-auto max-w-6xl">
-        <a href="/" className="text-sm text-emerald-400">← Volver</a>
-
-        <div className="mt-6 flex items-end justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-emerald-400">
-              Tribu Platform
-            </p>
-            <h1 className="mt-3 text-4xl font-bold">Eventos</h1>
-          </div>
-
-          <a href="/events/new" className="rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-black">
-            Nuevo evento
-          </a>
+    <main className="mx-auto w-full max-w-5xl px-6 py-10">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-950">
+            Eventos
+          </h1>
+          <p className="mt-2 text-sm text-slate-600">
+            Gestiona los eventos cargados en Supabase.
+          </p>
         </div>
+        <Link
+          href="/events/new"
+          className="rounded-md bg-slate-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+        >
+          Nuevo evento
+        </Link>
+      </div>
 
-        {error && <div className="mt-8 rounded-xl border border-red-500 p-4">{error.message}</div>}
-
-        <div className="mt-8 space-y-4">
-          {events.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-8">
-              Todavía no hay eventos creados.
-            </div>
-          ) : (
-            events.map((event) => (
-              <a
-                key={event.id}
-                href={`/events/${event.id}`}
-                className="block rounded-2xl border border-white/10 bg-white/5 p-6 hover:bg-white/10"
-              >
-                <h2 className="text-2xl font-semibold hover:text-emerald-400">{event.name}</h2>
-                <p className="mt-2 text-neutral-400">{event.description || "Sin descripción"}</p>
-                <p className="mt-2 text-sm text-neutral-500">{event.location || "Sin ubicación"}</p>
-              </a>
-            ))
-          )}
+      {events.length === 0 ? (
+        <div className="rounded-md border border-dashed border-slate-300 p-8 text-center">
+          <p className="text-sm text-slate-600">Todavia no hay eventos.</p>
         </div>
-      </section>
+      ) : (
+        <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
+          <ul className="divide-y divide-slate-200">
+            {events.map((event) => (
+              <li key={event.id}>
+                <Link
+                  href={`/events/${event.id}`}
+                  className="block px-5 py-4 transition hover:bg-slate-50"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h2 className="font-medium text-slate-950">
+                        {event.name}
+                      </h2>
+                      {event.description ? (
+                        <p className="mt-1 line-clamp-2 text-sm text-slate-600">
+                          {event.description}
+                        </p>
+                      ) : null}
+                    </div>
+                    {event.location ? (
+                      <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+                        {event.location}
+                      </span>
+                    ) : null}
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </main>
   );
 }
