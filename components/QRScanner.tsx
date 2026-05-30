@@ -1,23 +1,27 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { Html5Qrcode } from "html5-qrcode";
 
 type QRScannerProps = {
   onScan: (value: string) => void | Promise<void>;
   disabled?: boolean;
 };
 
+type ScannerStatus = "idle" | "opening" | "scanning" | "validating" | "error";
+
 export function QRScanner({ onScan, disabled = false }: QRScannerProps) {
   const scannerId = useRef(`qr-reader-${Math.random().toString(36).slice(2)}`);
-  const scannerRef = useRef<{ stop: () => Promise<void>; clear: () => void } | null>(null);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
   const lastScanAtRef = useRef(0);
-  const [isScanning, setIsScanning] = useState(false);
-  const [status, setStatus] = useState("Listo para abrir camara.");
+  const [status, setStatus] = useState<ScannerStatus>("idle");
+  const [message, setMessage] = useState("Listo para abrir camara.");
   const [error, setError] = useState("");
+  const isScannerVisible = status === "opening" || status === "scanning" || status === "validating";
 
   useEffect(() => {
     return () => {
-      stopScanner();
+      void stopScanner();
     };
   }, []);
 
@@ -27,64 +31,85 @@ export function QRScanner({ onScan, disabled = false }: QRScannerProps) {
 
     if (scanner) {
       try {
-        await scanner.stop();
+        if (scanner.isScanning) {
+          await scanner.stop();
+        }
         scanner.clear();
       } catch {
-        // Scanner cleanup can fail if the camera was already closed by the browser.
+        // The browser can close the camera before html5-qrcode finishes cleanup.
       }
     }
 
-    setIsScanning(false);
-    setStatus("Camara cerrada.");
+    setStatus("idle");
+    setMessage("Camara cerrada. Podés abrirla otra vez o validar manualmente.");
   }
 
   async function handleSuccessfulScan(decodedText: string) {
     const now = Date.now();
 
-    if (disabled || now - lastScanAtRef.current < 2000) {
+    if (disabled || status === "validating" || now - lastScanAtRef.current < 2000) {
       return;
     }
 
     lastScanAtRef.current = now;
-    setStatus("QR detectado. Validando...");
+    setStatus("validating");
+    setMessage("QR detectado. Validando entrada...");
     await stopScanner();
     await onScan(decodedText);
   }
 
   async function startScanner() {
     setError("");
-    setStatus("Solicitando permiso de camara...");
+    setStatus("opening");
+    setMessage("Solicitando permiso de camara...");
 
     if (!window.isSecureContext) {
-      setError("La camara requiere HTTPS. En Vercel funciona; en local usa validacion manual.");
+      setStatus("error");
+      setError("La camara requiere HTTPS. Probalo desde Vercel o pegá el código manualmente.");
       return;
     }
 
     try {
       const { Html5Qrcode } = await import("html5-qrcode");
-      const scanner = new Html5Qrcode(scannerId.current);
+      const cameras = await Html5Qrcode.getCameras();
+
+      if (!cameras.length) {
+        setStatus("error");
+        setError("No encontramos camaras disponibles. Pegá el código manualmente.");
+        return;
+      }
+
+      const backCamera =
+        cameras.find((camera) => /back|rear|environment|trasera/i.test(camera.label)) ??
+        cameras[cameras.length - 1];
+
+      const scanner = new Html5Qrcode(scannerId.current, { verbose: false });
       scannerRef.current = scanner;
 
       await scanner.start(
-        { facingMode: "environment" },
+        backCamera.id,
         {
           fps: 10,
           qrbox: { width: 260, height: 260 },
           aspectRatio: 1,
         },
         (decodedText) => {
-          handleSuccessfulScan(decodedText);
+          void handleSuccessfulScan(decodedText);
         },
         () => {}
       );
 
-      setIsScanning(true);
-      setStatus("Apunta la camara al QR.");
-    } catch {
+      setStatus("scanning");
+      setMessage("Apuntá la cámara al QR. Mantené el celular quieto un segundo.");
+    } catch (scannerError) {
       scannerRef.current = null;
-      setIsScanning(false);
-      setError("No se pudo abrir la camara. Permití acceso o pegá el código manualmente.");
-      setStatus("Fallback manual disponible.");
+      setStatus("error");
+      setMessage("Fallback manual disponible.");
+      setError(
+        scannerError instanceof Error
+          ? `No se pudo abrir la camara: ${scannerError.message}`
+          : "No se pudo abrir la camara. Permití acceso o pegá el código manualmente."
+      );
     }
   }
 
@@ -94,15 +119,15 @@ export function QRScanner({ onScan, disabled = false }: QRScannerProps) {
         <button
           type="button"
           onClick={startScanner}
-          disabled={isScanning || disabled}
+          disabled={status === "opening" || status === "scanning" || status === "validating" || disabled}
           className="min-h-12 rounded-lg bg-emerald-400 px-5 text-base font-semibold text-zinc-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Abrir camara
+          {status === "opening" ? "Abriendo..." : "Abrir camara"}
         </button>
         <button
           type="button"
-          onClick={stopScanner}
-          disabled={!isScanning}
+          onClick={() => void stopScanner()}
+          disabled={!isScannerVisible}
           className="min-h-12 rounded-lg border border-white/10 px-5 text-base font-semibold text-zinc-100 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Cerrar camara
@@ -110,7 +135,7 @@ export function QRScanner({ onScan, disabled = false }: QRScannerProps) {
       </div>
 
       <div className="rounded-lg border border-white/10 bg-zinc-950/70 px-4 py-3 text-sm text-zinc-300">
-        {status} Permití el acceso a la cámara. Si tu navegador falla, pegá el link o token abajo.
+        {message} Si tu navegador no permite cámara, pegá el link o token abajo.
       </div>
 
       {error ? (
@@ -121,7 +146,11 @@ export function QRScanner({ onScan, disabled = false }: QRScannerProps) {
 
       <div
         id={scannerId.current}
-        className={isScanning ? "overflow-hidden rounded-xl border border-white/10 bg-black" : "hidden"}
+        className={
+          isScannerVisible
+            ? "min-h-[320px] overflow-hidden rounded-xl border border-white/10 bg-black"
+            : "hidden"
+        }
       />
     </section>
   );
