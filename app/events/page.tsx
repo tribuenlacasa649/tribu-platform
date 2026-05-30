@@ -12,33 +12,22 @@ export default async function EventsPage() {
   return (
     <main className="min-h-screen bg-neutral-950 px-6 py-10 text-white">
       <section className="mx-auto max-w-6xl">
-        <a href="/" className="text-sm text-emerald-400">
-          ← Volver
-        </a>
+        <a href="/" className="text-sm text-emerald-400">← Volver</a>
 
         <div className="mt-6 flex items-end justify-between">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-emerald-400">
               Tribu Platform
             </p>
-
-            <h1 className="mt-3 text-4xl font-bold">
-              Eventos
-            </h1>
+            <h1 className="mt-3 text-4xl font-bold">Eventos</h1>
           </div>
-<a
-  href="/events/new"
-  className="rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-black"
->
-  Nuevo evento
-</a>
+
+          <a href="/events/new" className="rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-black">
+            Nuevo evento
+          </a>
         </div>
 
-        {error && (
-          <div className="mt-8 rounded-xl border border-red-500 p-4">
-            {error.message}
-          </div>
-        )}
+        {error && <div className="mt-8 rounded-xl border border-red-500 p-4">{error.message}</div>}
 
         <div className="mt-8 space-y-4">
           {events.length === 0 ? (
@@ -47,18 +36,15 @@ export default async function EventsPage() {
             </div>
           ) : (
             events.map((event) => (
-              <div
+              <a
                 key={event.id}
-                className="rounded-2xl border border-white/10 bg-white/5 p-6"
+                href={`/events/${event.id}`}
+                className="block rounded-2xl border border-white/10 bg-white/5 p-6 hover:bg-white/10"
               >
-                <h2 className="text-2xl font-semibold">
-                  {event.name}
-                </h2>
-
-                <p className="mt-2 text-neutral-400">
-                  {event.description || "Sin descripción"}
-                </p>
-              </div>
+                <h2 className="text-2xl font-semibold hover:text-emerald-400">{event.name}</h2>
+                <p className="mt-2 text-neutral-400">{event.description || "Sin descripción"}</p>
+                <p className="mt-2 text-sm text-neutral-500">{event.location || "Sin ubicación"}</p>
+              </a>
             ))
           )}
         </div>
