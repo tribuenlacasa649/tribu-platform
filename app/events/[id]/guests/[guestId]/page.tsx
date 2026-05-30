@@ -1,25 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { AppShell } from "../../../../../components/AppShell";
+import { Badge, guestStatusTone } from "../../../../../components/Badge";
 import { createSupabaseBrowserClient } from "../../../../../lib/supabase";
+import type { GuestRecord } from "../../../../../types/database";
 import { guestStatusLabels } from "../../../actions";
-import type { GuestRecord, GuestStatus } from "../../../../../types/database";
-
-const statusClasses: Record<GuestStatus, string> = {
-  active: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
-  cancelled: "border-amber-400/30 bg-amber-400/10 text-amber-200",
-  deleted: "border-red-400/30 bg-red-400/10 text-red-200",
-};
+import { DeleteGuestButton } from "../GuestActions";
 
 export default function GuestDetailPage() {
   const params = useParams<{ id: string; guestId: string }>();
-  const router = useRouter();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [guest, setGuest] = useState<GuestRecord | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -43,29 +38,8 @@ export default function GuestDetailPage() {
     loadGuest();
   }, [params.guestId, params.id, supabase]);
 
-  async function handleDelete() {
-    if (!guest || !confirm("Eliminar este invitado?")) {
-      return;
-    }
-
-    setIsDeleting(true);
-    const { error: requestError } = await supabase
-      .from("guests")
-      .update({ status: "deleted" })
-      .eq("id", guest.id);
-    setIsDeleting(false);
-
-    if (requestError) {
-      setError(requestError.message);
-      return;
-    }
-
-    router.push(`/events/${params.id}/guests`);
-    router.refresh();
-  }
-
   return (
-    <main className="min-h-screen bg-zinc-950 px-4 py-5 text-white sm:px-6 lg:px-8">
+    <AppShell title="Detalle invitado">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
         <header className="space-y-4">
           <Link
@@ -83,11 +57,9 @@ export default function GuestDetailPage() {
             <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:p-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <span
-                    className={`rounded-full border px-3 py-1 text-xs font-semibold ${statusClasses[guest.status]}`}
-                  >
+                  <Badge tone={guestStatusTone(guest.status)}>
                     {guestStatusLabels[guest.status]}
-                  </span>
+                  </Badge>
                   <h1 className="mt-3 text-3xl font-semibold tracking-tight">
                     {guest.name}
                   </h1>
@@ -100,14 +72,11 @@ export default function GuestDetailPage() {
                   >
                     Editar
                   </Link>
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    disabled={isDeleting}
-                    className="min-h-12 rounded-lg bg-red-500 px-5 text-base font-semibold text-white transition hover:bg-red-400 disabled:opacity-60"
-                  >
-                    {isDeleting ? "Eliminando..." : "Eliminar"}
-                  </button>
+                  <DeleteGuestButton
+                    guestId={guest.id}
+                    eventId={params.id}
+                    redirectToList
+                  />
                 </div>
               </div>
             </div>
@@ -141,6 +110,6 @@ export default function GuestDetailPage() {
           </section>
         ) : null}
       </div>
-    </main>
+    </AppShell>
   );
 }

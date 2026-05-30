@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { EventForm } from "../../EventForm";
+import { AppShell } from "../../../../components/AppShell";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase";
 import type { EventRecord } from "../../../../types/database";
+import { EventForm } from "../../EventForm";
 
 export default function EditEventPage() {
   const params = useParams<{ id: string }>();
@@ -35,7 +36,7 @@ export default function EditEventPage() {
   }, [params.id, supabase]);
 
   return (
-    <main className="min-h-screen bg-zinc-950 px-4 py-5 text-white sm:px-6 lg:px-8">
+    <AppShell title="Editar evento">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <header className="space-y-3">
           <Link href={`/events/${params.id}`} className="text-sm font-semibold text-emerald-300">
@@ -63,6 +64,6 @@ export default function EditEventPage() {
           <EventForm mode="edit" event={event} />
         ) : null}
       </div>
-    </main>
+    </AppShell>
   );
 }

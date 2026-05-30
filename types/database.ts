@@ -2,6 +2,19 @@ export type EventStatus = "draft" | "active" | "archived";
 
 export type GuestStatus = "active" | "cancelled" | "deleted";
 
+export type InternalRole = "admin" | "production" | "door" | "cash" | "comms";
+
+export type TicketStatus = "active" | "cancelled" | "used";
+
+export type PaymentStatus = "pending" | "paid" | "cancelled" | "refunded";
+
+export type ProfileRecord = {
+  id: string;
+  full_name: string | null;
+  role: InternalRole;
+  created_at: string;
+};
+
 export type EventRecord = {
   id: string;
   name: string;
@@ -41,4 +54,24 @@ export type GuestFormValues = {
   status: GuestStatus;
   ticket_quantity: number;
   notes: string;
+};
+
+export type TicketRecord = {
+  id: string;
+  event_id: string;
+  guest_id: string | null;
+  token: string;
+  status: TicketStatus;
+  max_uses: number;
+  used_count: number;
+  created_at: string;
+};
+
+export type TicketScanRecord = {
+  id: string;
+  ticket_id: string;
+  event_id: string;
+  scanned_at: string;
+  result: string;
+  note: string | null;
 };

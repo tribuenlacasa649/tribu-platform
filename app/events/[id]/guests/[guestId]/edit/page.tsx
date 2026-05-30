@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { GuestForm } from "../../../../GuestForm";
+import { AppShell } from "../../../../../../components/AppShell";
 import { createSupabaseBrowserClient } from "../../../../../../lib/supabase";
 import type { GuestRecord } from "../../../../../../types/database";
+import { GuestForm } from "../../GuestForm";
 
 export default function EditGuestPage() {
   const params = useParams<{ id: string; guestId: string }>();
@@ -36,7 +37,7 @@ export default function EditGuestPage() {
   }, [params.guestId, params.id, supabase]);
 
   return (
-    <main className="min-h-screen bg-zinc-950 px-4 py-5 text-white sm:px-6 lg:px-8">
+    <AppShell title="Editar invitado">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <header className="space-y-3">
           <Link
@@ -67,6 +68,6 @@ export default function EditGuestPage() {
           <GuestForm mode="edit" eventId={params.id} guest={guest} />
         ) : null}
       </div>
-    </main>
+    </AppShell>
   );
 }

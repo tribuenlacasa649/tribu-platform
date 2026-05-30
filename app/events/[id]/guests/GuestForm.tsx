@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
-import { createSupabaseBrowserClient } from "../../lib/supabase";
-import { guestStatusLabels, guestStatuses } from "./actions";
-import type { GuestRecord, GuestStatus } from "../../types/database";
+import { createSupabaseBrowserClient } from "../../../../lib/supabase";
+import { guestStatusLabels, guestStatuses } from "../../actions";
+import type { GuestRecord, GuestStatus } from "../../../../types/database";
 
 type GuestFormProps = {
   eventId: string;

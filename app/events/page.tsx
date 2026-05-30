@@ -2,15 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { eventStatusLabels } from "./actions";
+import { AppShell } from "../../components/AppShell";
+import { Badge, eventStatusTone } from "../../components/Badge";
+import { EmptyState } from "../../components/EmptyState";
 import { createSupabaseBrowserClient } from "../../lib/supabase";
-import type { EventRecord, EventStatus } from "../../types/database";
-
-const statusClasses: Record<EventStatus, string> = {
-  draft: "border-zinc-500/30 bg-zinc-500/10 text-zinc-200",
-  active: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
-  archived: "border-amber-400/30 bg-amber-400/10 text-amber-200",
-};
+import type { EventRecord } from "../../types/database";
+import { eventStatusLabels } from "./actions";
 
 function formatDate(value: string | null) {
   if (!value) {
@@ -50,11 +47,11 @@ export default function EventsPage() {
   }, [supabase]);
 
   return (
-    <main className="min-h-screen bg-zinc-950 px-4 py-5 text-white sm:px-6 lg:px-8">
+    <AppShell title="Eventos">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <header className="flex flex-col gap-4 rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div>
-            <p className="text-sm font-medium text-emerald-300">Tribu Platform</p>
+            <p className="text-sm font-medium text-emerald-300">Gestion</p>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight">Eventos</h1>
           </div>
           <Link
@@ -76,10 +73,12 @@ export default function EventsPage() {
             Cargando eventos...
           </div>
         ) : events.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-white/15 bg-white/[0.03] p-8 text-center">
-            <h2 className="text-xl font-semibold">Sin eventos</h2>
-            <p className="mt-2 text-sm text-zinc-400">Crea el primero para empezar.</p>
-          </div>
+          <EmptyState
+            title="Sin eventos"
+            description="Crea el primero para empezar."
+            actionHref="/events/new"
+            actionLabel="Crear evento"
+          />
         ) : (
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {events.map((event) => (
@@ -97,11 +96,9 @@ export default function EventsPage() {
                       {event.location || "Sin ubicacion"}
                     </p>
                   </div>
-                  <span
-                    className={`shrink-0 rounded-full border px-3 py-1 text-xs font-semibold ${statusClasses[event.status]}`}
-                  >
+                  <Badge tone={eventStatusTone(event.status)}>
                     {eventStatusLabels[event.status]}
-                  </span>
+                  </Badge>
                 </div>
 
                 <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
@@ -129,6 +126,6 @@ export default function EventsPage() {
           </section>
         )}
       </div>
-    </main>
+    </AppShell>
   );
 }

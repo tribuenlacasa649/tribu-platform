@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { GuestForm } from "../../../GuestForm";
+import { AppShell } from "../../../../../components/AppShell";
+import { GuestForm } from "../GuestForm";
 
 export default function NewGuestPage() {
   const params = useParams<{ id: string }>();
 
   return (
-    <main className="min-h-screen bg-zinc-950 px-4 py-5 text-white sm:px-6 lg:px-8">
+    <AppShell title="Nuevo invitado">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <header className="space-y-3">
           <Link
@@ -27,6 +28,6 @@ export default function NewGuestPage() {
 
         <GuestForm mode="create" eventId={params.id} />
       </div>
-    </main>
+    </AppShell>
   );
 }

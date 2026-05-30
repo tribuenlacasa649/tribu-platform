@@ -3,15 +3,11 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { eventStatusLabels } from "../actions";
+import { AppShell } from "../../../components/AppShell";
+import { Badge, eventStatusTone } from "../../../components/Badge";
 import { createSupabaseBrowserClient } from "../../../lib/supabase";
-import type { EventRecord, EventStatus } from "../../../types/database";
-
-const statusClasses: Record<EventStatus, string> = {
-  draft: "border-zinc-500/30 bg-zinc-500/10 text-zinc-200",
-  active: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
-  archived: "border-amber-400/30 bg-amber-400/10 text-amber-200",
-};
+import type { EventRecord } from "../../../types/database";
+import { eventStatusLabels } from "../actions";
 
 function formatDateTime(value: string | null) {
   if (!value) {
@@ -26,6 +22,15 @@ function formatDateTime(value: string | null) {
     minute: "2-digit",
   }).format(new Date(value));
 }
+
+const upcomingModules = [
+  "Entradas QR",
+  "Check-in",
+  "Pagos",
+  "Produccion",
+  "Stock",
+  "Reportes",
+];
 
 export default function EventDetailPage() {
   const params = useParams<{ id: string }>();
@@ -75,7 +80,7 @@ export default function EventDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-950 px-4 py-5 text-white sm:px-6 lg:px-8">
+    <AppShell title="Detalle evento">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <header className="space-y-4">
           <Link href="/events" className="text-sm font-semibold text-emerald-300">
@@ -91,11 +96,9 @@ export default function EventDetailPage() {
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={`rounded-full border px-3 py-1 text-xs font-semibold ${statusClasses[event.status]}`}
-                    >
+                    <Badge tone={eventStatusTone(event.status)}>
                       {eventStatusLabels[event.status]}
-                    </span>
+                    </Badge>
                     <span className="text-sm text-zinc-500">
                       Creado {formatDateTime(event.created_at)}
                     </span>
@@ -160,17 +163,17 @@ export default function EventDetailPage() {
                 href={`/events/${event.id}/guests`}
                 className="rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-5 transition hover:bg-emerald-400/15"
               >
-                <p className="text-sm font-semibold text-emerald-200">Activo</p>
-                <h2 className="mt-2 text-xl font-semibold">Invitados</h2>
+                <Badge tone="success">Activo</Badge>
+                <h2 className="mt-3 text-xl font-semibold">Invitados</h2>
                 <p className="mt-2 text-sm text-zinc-300">Gestionar lista y preferencias.</p>
               </Link>
-              {["Entradas QR", "Check-in", "Pagos", "Produccion", "Stock"].map((module) => (
+              {upcomingModules.map((module) => (
                 <div
                   key={module}
                   className="rounded-xl border border-white/10 bg-white/[0.04] p-5 opacity-75"
                 >
-                  <p className="text-sm font-semibold text-zinc-500">Proximamente</p>
-                  <h2 className="mt-2 text-xl font-semibold">{module}</h2>
+                  <Badge tone="soon">Proximamente</Badge>
+                  <h2 className="mt-3 text-xl font-semibold">{module}</h2>
                   <p className="mt-2 text-sm text-zinc-400">Modulo preparado.</p>
                 </div>
               ))}
@@ -178,6 +181,6 @@ export default function EventDetailPage() {
           </>
         ) : null}
       </div>
-    </main>
+    </AppShell>
   );
 }
