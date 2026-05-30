@@ -27,13 +27,17 @@ export default function CheckinPage() {
   const [result, setResult] = useState<CheckinResult | null>(null);
 
   async function validateTicket(rawValue: string) {
+    if (isChecking) {
+      return;
+    }
+
     const token = extractTicketToken(rawValue);
     setIsChecking(true);
     setResult(null);
 
     const { data, error } = await supabase
       .from("tickets")
-      .select("id, event_id, guest_id, token, status, max_uses, used_count, created_at, events(id, name, location, starts_at), guests(id, name, contact)")
+      .select("id, event_id, guest_id, public_guest_id, token, status, max_uses, used_count, created_at, events(id, name, location, starts_at), guests(id, name, contact)")
       .eq("token", token)
       .eq("event_id", params.id)
       .maybeSingle();
@@ -142,7 +146,7 @@ export default function CheckinPage() {
           <p className="mt-2 text-sm text-zinc-400">Escanea QR o pega token/link.</p>
         </header>
 
-        <QRScanner onScan={validateTicket} />
+        <QRScanner onScan={validateTicket} disabled={isChecking} />
 
         <form onSubmit={handleManualCheckin} className="space-y-4">
           <input
@@ -201,6 +205,13 @@ export default function CheckinPage() {
                 </div>
               </div>
             ) : null}
+            <button
+              type="button"
+              onClick={() => setResult(null)}
+              className="mt-5 min-h-12 w-full rounded-xl border border-white/10 px-5 font-semibold text-zinc-100 transition hover:bg-white/5"
+            >
+              Escanear siguiente
+            </button>
           </section>
         ) : null}
       </div>

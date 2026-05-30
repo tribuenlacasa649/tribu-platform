@@ -27,7 +27,7 @@ export default function TicketDetailPage() {
   async function loadTicket() {
     const { data, error: requestError } = await supabase
       .from("tickets")
-      .select("id, event_id, guest_id, token, status, max_uses, used_count, created_at, guests(id, name, contact)")
+      .select("id, event_id, guest_id, public_guest_id, token, status, max_uses, used_count, created_at, guests(id, name, contact)")
       .eq("id", params.ticketId)
       .eq("event_id", params.id)
       .single();
@@ -45,7 +45,7 @@ export default function TicketDetailPage() {
     async function loadInitialTicket() {
       const { data, error: requestError } = await supabase
         .from("tickets")
-        .select("id, event_id, guest_id, token, status, max_uses, used_count, created_at, guests(id, name, contact)")
+        .select("id, event_id, guest_id, public_guest_id, token, status, max_uses, used_count, created_at, guests(id, name, contact)")
         .eq("id", params.ticketId)
         .eq("event_id", params.id)
         .single();

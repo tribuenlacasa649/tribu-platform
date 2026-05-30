@@ -43,7 +43,7 @@ export default function EventTicketsPage() {
         .order("created_at", { ascending: true }),
       supabase
         .from("tickets")
-        .select("id, event_id, guest_id, token, status, max_uses, used_count, created_at, guests(id, name, contact)")
+        .select("id, event_id, guest_id, public_guest_id, token, status, max_uses, used_count, created_at, guests(id, name, contact)")
         .eq("event_id", params.id)
         .order("created_at", { ascending: false }),
     ]);
@@ -74,7 +74,7 @@ export default function EventTicketsPage() {
           .order("created_at", { ascending: true }),
         supabase
           .from("tickets")
-          .select("id, event_id, guest_id, token, status, max_uses, used_count, created_at, guests(id, name, contact)")
+          .select("id, event_id, guest_id, public_guest_id, token, status, max_uses, used_count, created_at, guests(id, name, contact)")
           .eq("event_id", params.id)
           .order("created_at", { ascending: false }),
       ]);

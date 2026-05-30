@@ -3,25 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 
 type QRScannerProps = {
-  onScan: (value: string) => void;
+  onScan: (value: string) => void | Promise<void>;
+  disabled?: boolean;
 };
 
-type DetectedBarcode = {
-  rawValue: string;
-};
-
-type BarcodeDetectorConstructor = new (options?: {
-  formats?: string[];
-}) => {
-  detect: (source: CanvasImageSource) => Promise<DetectedBarcode[]>;
-};
-
-export function QRScanner({ onScan }: QRScannerProps) {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const animationRef = useRef<number | null>(null);
+export function QRScanner({ onScan, disabled = false }: QRScannerProps) {
+  const scannerId = useRef(`qr-reader-${Math.random().toString(36).slice(2)}`);
+  const scannerRef = useRef<{ stop: () => Promise<void>; clear: () => void } | null>(null);
+  const lastScanAtRef = useRef(0);
   const [isScanning, setIsScanning] = useState(false);
+  const [status, setStatus] = useState("Listo para abrir camara.");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -30,87 +21,70 @@ export function QRScanner({ onScan }: QRScannerProps) {
     };
   }, []);
 
-  function stopScanner() {
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-      animationRef.current = null;
-    }
+  async function stopScanner() {
+    const scanner = scannerRef.current;
+    scannerRef.current = null;
 
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
+    if (scanner) {
+      try {
+        await scanner.stop();
+        scanner.clear();
+      } catch {
+        // Scanner cleanup can fail if the camera was already closed by the browser.
+      }
     }
 
     setIsScanning(false);
+    setStatus("Camara cerrada.");
+  }
+
+  async function handleSuccessfulScan(decodedText: string) {
+    const now = Date.now();
+
+    if (disabled || now - lastScanAtRef.current < 2000) {
+      return;
+    }
+
+    lastScanAtRef.current = now;
+    setStatus("QR detectado. Validando...");
+    await stopScanner();
+    await onScan(decodedText);
   }
 
   async function startScanner() {
     setError("");
+    setStatus("Solicitando permiso de camara...");
 
-    if (!("mediaDevices" in navigator) || !navigator.mediaDevices.getUserMedia) {
-      setError("Este navegador no permite abrir la camara. Usa validacion manual.");
-      return;
-    }
-
-    const BarcodeDetectorClass = (
-      window as Window & { BarcodeDetector?: BarcodeDetectorConstructor }
-    ).BarcodeDetector;
-
-    if (!BarcodeDetectorClass) {
-      setError("Scanner QR no soportado en este navegador. Usa validacion manual.");
+    if (!window.isSecureContext) {
+      setError("La camara requiere HTTPS. En Vercel funciona; en local usa validacion manual.");
       return;
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-        audio: false,
-      });
+      const { Html5Qrcode } = await import("html5-qrcode");
+      const scanner = new Html5Qrcode(scannerId.current);
+      scannerRef.current = scanner;
 
-      streamRef.current = stream;
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
+      await scanner.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: { width: 260, height: 260 },
+          aspectRatio: 1,
+        },
+        (decodedText) => {
+          handleSuccessfulScan(decodedText);
+        },
+        () => {}
+      );
 
       setIsScanning(true);
-      const detector = new BarcodeDetectorClass({ formats: ["qr_code"] });
-
-      async function scanFrame() {
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
-
-        if (!video || !canvas || video.readyState < 2) {
-          animationRef.current = requestAnimationFrame(scanFrame);
-          return;
-        }
-
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const context = canvas.getContext("2d");
-
-        if (!context) {
-          animationRef.current = requestAnimationFrame(scanFrame);
-          return;
-        }
-
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const codes = await detector.detect(canvas);
-
-        if (codes[0]?.rawValue) {
-          stopScanner();
-          onScan(codes[0].rawValue);
-          return;
-        }
-
-        animationRef.current = requestAnimationFrame(scanFrame);
-      }
-
-      animationRef.current = requestAnimationFrame(scanFrame);
+      setStatus("Apunta la camara al QR.");
     } catch {
-      setError("No se pudo abrir la camara. Revisa permisos o usa validacion manual.");
-      stopScanner();
+      scannerRef.current = null;
+      setIsScanning(false);
+      setError("No se pudo abrir la camara. Permití acceso o pegá el código manualmente.");
+      setStatus("Fallback manual disponible.");
     }
   }
 
@@ -119,14 +93,24 @@ export function QRScanner({ onScan }: QRScannerProps) {
       <div className="grid gap-3 sm:grid-cols-2">
         <button
           type="button"
-          onClick={isScanning ? stopScanner : startScanner}
-          className="min-h-12 rounded-lg bg-emerald-400 px-5 text-base font-semibold text-zinc-950 transition hover:bg-emerald-300"
+          onClick={startScanner}
+          disabled={isScanning || disabled}
+          className="min-h-12 rounded-lg bg-emerald-400 px-5 text-base font-semibold text-zinc-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isScanning ? "Detener scanner" : "Escanear QR"}
+          Abrir camara
         </button>
-        <p className="flex min-h-12 items-center rounded-lg border border-white/10 px-4 text-sm text-zinc-400">
-          Si falla, usa el campo manual.
-        </p>
+        <button
+          type="button"
+          onClick={stopScanner}
+          disabled={!isScanning}
+          className="min-h-12 rounded-lg border border-white/10 px-5 text-base font-semibold text-zinc-100 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Cerrar camara
+        </button>
+      </div>
+
+      <div className="rounded-lg border border-white/10 bg-zinc-950/70 px-4 py-3 text-sm text-zinc-300">
+        {status} Permití el acceso a la cámara. Si tu navegador falla, pegá el link o token abajo.
       </div>
 
       {error ? (
@@ -135,15 +119,10 @@ export function QRScanner({ onScan }: QRScannerProps) {
         </div>
       ) : null}
 
-      <div className={isScanning ? "block" : "hidden"}>
-        <video
-          ref={videoRef}
-          muted
-          playsInline
-          className="aspect-[3/4] w-full rounded-xl border border-white/10 bg-black object-cover"
-        />
-        <canvas ref={canvasRef} className="hidden" />
-      </div>
+      <div
+        id={scannerId.current}
+        className={isScanning ? "overflow-hidden rounded-xl border border-white/10 bg-black" : "hidden"}
+      />
     </section>
   );
 }

@@ -7,8 +7,9 @@ import { AppShell } from "../../../../components/AppShell";
 import { Badge } from "../../../../components/Badge";
 import { EmptyState } from "../../../../components/EmptyState";
 import { EventContextNav } from "../../../../components/EventContextNav";
+import { confirmPublicGuestPayment, formatMoney, getSuggestedPaymentAmount } from "../../../../lib/payments";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase";
-import type { GuestRecord, PaymentRecord, PaymentStatus } from "../../../../types/database";
+import type { EventRecord, PaymentStatus, PublicGuestRecord } from "../../../../types/database";
 
 const paymentLabels: Record<PaymentStatus, string> = {
   pending: "Pendiente",
@@ -28,35 +29,36 @@ export default function PaymentsPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const [guests, setGuests] = useState<GuestRecord[]>([]);
-  const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [event, setEvent] = useState<EventRecord | null>(null);
+  const [requests, setRequests] = useState<PublicGuestRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeId, setActiveId] = useState("");
   const [error, setError] = useState("");
 
   async function loadPayments() {
-    const [guestsResult, paymentsResult] = await Promise.all([
+    const [eventResult, requestsResult] = await Promise.all([
       supabase
-        .from("guests")
-        .select("id, event_id, name, contact, food_preferences, status, ticket_quantity, notes, created_at")
+        .from("events")
+        .select("id, name, description, location, starts_at, ends_at, status, slug, is_public, public_title, public_description, ticket_price, public_status, created_at")
+        .eq("id", params.id)
+        .single(),
+      supabase
+        .from("public_guests")
+        .select("id, event_id, full_name, phone, instagram, ticket_quantity, food_preferences, notes, status, payment_status, access_token, payment_reference, payment_proof, payment_notified_at, payment_confirmed_at, internal_guest_id, created_at")
         .eq("event_id", params.id)
-        .neq("status", "deleted")
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("payments")
-        .select("id, event_id, guest_id, amount, status, method, reference, notes, created_at")
-        .eq("event_id", params.id),
+        .order("created_at", { ascending: false }),
     ]);
 
-    if (guestsResult.error) {
-      setError(guestsResult.error.message);
+    if (eventResult.error) {
+      setError(eventResult.error.message);
     } else {
-      setGuests((guestsResult.data ?? []) as GuestRecord[]);
+      setEvent(eventResult.data as EventRecord);
     }
 
-    if (paymentsResult.error) {
-      setError(paymentsResult.error.message);
+    if (requestsResult.error) {
+      setError(requestsResult.error.message);
     } else {
-      setPayments((paymentsResult.data ?? []) as PaymentRecord[]);
+      setRequests((requestsResult.data ?? []) as PublicGuestRecord[]);
     }
 
     setIsLoading(false);
@@ -64,29 +66,29 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     async function loadInitialPayments() {
-      const [guestsResult, paymentsResult] = await Promise.all([
+      const [eventResult, requestsResult] = await Promise.all([
         supabase
-          .from("guests")
-          .select("id, event_id, name, contact, food_preferences, status, ticket_quantity, notes, created_at")
+          .from("events")
+          .select("id, name, description, location, starts_at, ends_at, status, slug, is_public, public_title, public_description, ticket_price, public_status, created_at")
+          .eq("id", params.id)
+          .single(),
+        supabase
+          .from("public_guests")
+          .select("id, event_id, full_name, phone, instagram, ticket_quantity, food_preferences, notes, status, payment_status, access_token, payment_reference, payment_proof, payment_notified_at, payment_confirmed_at, internal_guest_id, created_at")
           .eq("event_id", params.id)
-          .neq("status", "deleted")
-          .order("created_at", { ascending: true }),
-        supabase
-          .from("payments")
-          .select("id, event_id, guest_id, amount, status, method, reference, notes, created_at")
-          .eq("event_id", params.id),
+          .order("created_at", { ascending: false }),
       ]);
 
-      if (guestsResult.error) {
-        setError(guestsResult.error.message);
+      if (eventResult.error) {
+        setError(eventResult.error.message);
       } else {
-        setGuests((guestsResult.data ?? []) as GuestRecord[]);
+        setEvent(eventResult.data as EventRecord);
       }
 
-      if (paymentsResult.error) {
-        setError(paymentsResult.error.message);
+      if (requestsResult.error) {
+        setError(requestsResult.error.message);
       } else {
-        setPayments((paymentsResult.data ?? []) as PaymentRecord[]);
+        setRequests((requestsResult.data ?? []) as PublicGuestRecord[]);
       }
 
       setIsLoading(false);
@@ -95,34 +97,53 @@ export default function PaymentsPage() {
     loadInitialPayments();
   }, [params.id, supabase]);
 
-  async function setPaymentStatus(guest: GuestRecord, status: PaymentStatus) {
+  async function confirmPayment(request: PublicGuestRecord) {
     setError("");
-    const existingPayment = payments.find((payment) => payment.guest_id === guest.id);
+    setActiveId(request.id);
+
+    try {
+      await confirmPublicGuestPayment(supabase, request, event);
+      await loadPayments();
+      router.refresh();
+    } catch (confirmError) {
+      setError(confirmError instanceof Error ? confirmError.message : "No se pudo confirmar.");
+    } finally {
+      setActiveId("");
+    }
+  }
+
+  async function setPaymentStatus(request: PublicGuestRecord, status: PaymentStatus) {
+    setError("");
+    setActiveId(request.id);
 
     const payload = {
-      event_id: params.id,
-      guest_id: guest.id,
-      status,
-      amount: existingPayment?.amount ?? 0,
-      method: existingPayment?.method ?? "manual",
-      reference: existingPayment?.reference ?? null,
-      notes: existingPayment?.notes ?? null,
+      payment_status: status,
+      payment_confirmed_at: status === "confirmed" ? new Date().toISOString() : null,
+      status: status === "confirmed" ? "approved" : request.status,
     };
 
-    const request = existingPayment
-      ? supabase.from("payments").update(payload).eq("id", existingPayment.id)
-      : supabase.from("payments").insert(payload);
-
-    const { error: requestError } = await request;
+    const { error: requestError } = await supabase
+      .from("public_guests")
+      .update(payload)
+      .eq("id", request.id);
 
     if (requestError) {
       setError(requestError.message);
+      setActiveId("");
       return;
     }
 
     await loadPayments();
+    setActiveId("");
     router.refresh();
   }
+
+  const counts = {
+    pending: requests.filter((request) => request.payment_status === "pending").length,
+    notified: requests.filter((request) => request.payment_status === "notified").length,
+    confirmed: requests.filter((request) => request.payment_status === "confirmed").length,
+    rejected: requests.filter((request) => request.payment_status === "rejected").length,
+  };
 
   return (
     <AppShell title="Pagos">
@@ -133,8 +154,8 @@ export default function PaymentsPage() {
           <Link href={`/events/${params.id}`} className="text-sm font-semibold text-emerald-300">
             Volver al evento
           </Link>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight">Pagos manuales</h1>
-          <p className="mt-2 text-sm text-zinc-400">Control simple sin Mercado Pago.</p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight">Pagos</h1>
+          <p className="mt-2 text-sm text-zinc-400">Transferencias manuales y activacion de QR.</p>
         </header>
 
         {error ? (
@@ -143,48 +164,89 @@ export default function PaymentsPage() {
           </div>
         ) : null}
 
+        <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          {(["pending", "notified", "confirmed", "rejected"] as PaymentStatus[]).map((status) => (
+            <div key={status} className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+              <p className="text-sm text-zinc-500">{paymentLabels[status]}</p>
+              <p className="mt-2 text-3xl font-semibold">{counts[status]}</p>
+            </div>
+          ))}
+        </section>
+
         {isLoading ? (
           <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-zinc-300">
             Cargando pagos...
           </div>
-        ) : guests.length === 0 ? (
-          <EmptyState title="Sin invitados" description="Agrega invitados para controlar pagos." />
+        ) : requests.length === 0 ? (
+          <EmptyState title="Sin solicitudes" description="Todavia no hay reservas publicas." />
         ) : (
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {guests.map((guest) => {
-              const payment = payments.find((item) => item.guest_id === guest.id);
-              const status = payment?.status ?? "pending";
+            {requests.map((request) => {
+              const amount = getSuggestedPaymentAmount(request, event);
 
               return (
                 <article
-                  key={guest.id}
+                  key={request.id}
                   className="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h2 className="text-lg font-semibold">{guest.name}</h2>
-                      <p className="mt-1 text-sm text-zinc-400">{guest.contact || "Sin contacto"}</p>
+                      <h2 className="text-lg font-semibold">{request.full_name}</h2>
+                      <p className="mt-1 text-sm text-zinc-400">{request.phone}</p>
                     </div>
-                    <Badge tone={paymentTone[status]}>{paymentLabels[status]}</Badge>
+                    <Badge tone={paymentTone[request.payment_status]}>
+                      {paymentLabels[request.payment_status]}
+                    </Badge>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-2">
-                    {(["pending", "notified", "confirmed", "rejected"] as PaymentStatus[]).map(
-                      (nextStatus) => (
-                        <button
-                          key={nextStatus}
-                          type="button"
-                          onClick={() => setPaymentStatus(guest, nextStatus)}
-                          className={`min-h-11 rounded-lg px-3 text-sm font-semibold transition ${
-                            status === nextStatus
-                              ? "bg-emerald-400 text-zinc-950"
-                              : "border border-white/10 text-zinc-100 hover:bg-white/5"
-                          }`}
-                        >
-                          {paymentLabels[nextStatus]}
-                        </button>
-                      )
-                    )}
+                  <div className="mt-4 grid gap-2 text-sm">
+                    <div className="rounded-lg bg-zinc-950/70 p-3">
+                      <p className="text-zinc-500">Entradas / monto</p>
+                      <p className="mt-1 font-semibold">
+                        {request.ticket_quantity} · {formatMoney(amount)}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-zinc-950/70 p-3">
+                      <p className="text-zinc-500">Referencia</p>
+                      <p className="mt-1 break-words font-semibold">
+                        {request.payment_reference || "Sin referencia"}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-zinc-950/70 p-3">
+                      <p className="text-zinc-500">Comprobante</p>
+                      <p className="mt-1 break-words font-semibold">
+                        {request.payment_proof || "Sin comprobante"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-2">
+                    <button
+                      type="button"
+                      onClick={() => confirmPayment(request)}
+                      disabled={activeId === request.id}
+                      className="min-h-11 rounded-lg bg-emerald-400 px-4 text-sm font-semibold text-zinc-950 transition disabled:opacity-60"
+                    >
+                      {activeId === request.id ? "Procesando..." : "Confirmar y generar QR"}
+                    </button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentStatus(request, "pending")}
+                        disabled={activeId === request.id}
+                        className="min-h-11 rounded-lg border border-white/10 px-3 text-sm font-semibold text-zinc-100"
+                      >
+                        Pendiente
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentStatus(request, "rejected")}
+                        disabled={activeId === request.id}
+                        className="min-h-11 rounded-lg bg-red-500 px-3 text-sm font-semibold text-white"
+                      >
+                        Rechazar
+                      </button>
+                    </div>
                   </div>
                 </article>
               );

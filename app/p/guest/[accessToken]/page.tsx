@@ -5,8 +5,13 @@ import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Badge } from "../../../../components/Badge";
 import { CopyButton } from "../../../../components/CopyButton";
+import { PaymentNoticeForm } from "../../../../components/PaymentNoticeForm";
+import { PaymentStatusCard } from "../../../../components/PaymentStatusCard";
+import { QRCodeBox } from "../../../../components/QRCodeBox";
+import { formatMoney } from "../../../../lib/payments";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase";
-import type { PaymentStatus, PublicGuestStatus } from "../../../../types/database";
+import { getPublicTicketUrl } from "../../../../lib/tickets";
+import type { PaymentStatus, PublicGuestStatus, TicketStatus } from "../../../../types/database";
 
 type PublicGuestPortalRecord = {
   id: string;
@@ -20,6 +25,11 @@ type PublicGuestPortalRecord = {
   status: PublicGuestStatus;
   payment_status: PaymentStatus;
   access_token: string;
+  payment_reference: string | null;
+  payment_proof: string | null;
+  payment_notified_at: string | null;
+  payment_confirmed_at: string | null;
+  internal_guest_id: string | null;
   created_at: string;
   event_name: string | null;
   event_public_title: string | null;
@@ -28,17 +38,18 @@ type PublicGuestPortalRecord = {
   event_ticket_price: number | null;
 };
 
+type PublicGuestTicket = {
+  id: string;
+  token: string;
+  status: TicketStatus;
+  used_count: number;
+  max_uses: number;
+};
+
 const statusLabels: Record<PublicGuestStatus, string> = {
   pending: "Solicitud recibida",
   approved: "Solicitud aprobada",
   cancelled: "Solicitud cancelada",
-};
-
-const paymentLabels: Record<PaymentStatus, string> = {
-  pending: "Pago pendiente",
-  notified: "Pago avisado",
-  confirmed: "Pago confirmado",
-  rejected: "Pago rechazado",
 };
 
 function getTone(status: PublicGuestStatus) {
@@ -57,11 +68,35 @@ export default function PublicGuestPortalPage() {
   const params = useParams<{ accessToken: string }>();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [guest, setGuest] = useState<PublicGuestPortalRecord | null>(null);
+  const [tickets, setTickets] = useState<PublicGuestTicket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
+  async function loadPortal() {
+    const { data, error: requestError } = await supabase.rpc(
+      "get_public_guest_by_token",
+      { lookup_token: params.accessToken }
+    );
+
+    const firstRow = Array.isArray(data) ? data[0] : null;
+
+    if (requestError || !firstRow) {
+      setError(requestError?.message || "No encontramos esta solicitud.");
+      setIsLoading(false);
+      return;
+    }
+
+    setGuest(firstRow as PublicGuestPortalRecord);
+
+    const { data: ticketData } = await supabase.rpc("get_public_tickets_by_guest_token", {
+      lookup_token: params.accessToken,
+    });
+    setTickets((ticketData ?? []) as PublicGuestTicket[]);
+    setIsLoading(false);
+  }
+
   useEffect(() => {
-    async function loadGuest() {
+    async function loadInitialPortal() {
       const { data, error: requestError } = await supabase.rpc(
         "get_public_guest_by_token",
         { lookup_token: params.accessToken }
@@ -71,18 +106,25 @@ export default function PublicGuestPortalPage() {
 
       if (requestError || !firstRow) {
         setError(requestError?.message || "No encontramos esta solicitud.");
-      } else {
-        setGuest(firstRow as PublicGuestPortalRecord);
+        setIsLoading(false);
+        return;
       }
 
+      setGuest(firstRow as PublicGuestPortalRecord);
+
+      const { data: ticketData } = await supabase.rpc("get_public_tickets_by_guest_token", {
+        lookup_token: params.accessToken,
+      });
+      setTickets((ticketData ?? []) as PublicGuestTicket[]);
       setIsLoading(false);
     }
 
-    loadGuest();
+    loadInitialPortal();
   }, [params.accessToken, supabase]);
 
   const currentUrl =
     typeof window === "undefined" ? `/p/guest/${params.accessToken}` : window.location.href;
+  const amount = (guest?.event_ticket_price ?? 0) * (guest?.ticket_quantity ?? 0);
 
   return (
     <main className="min-h-screen bg-zinc-950 px-4 py-6 text-white">
@@ -110,29 +152,77 @@ export default function PublicGuestPortalPage() {
               </p>
             </section>
 
-            <section className="grid gap-3">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                <p className="text-sm text-zinc-500">Entradas solicitadas</p>
-                <p className="mt-2 text-2xl font-semibold">{guest.ticket_quantity}</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                <p className="text-sm text-zinc-500">Estado de pago</p>
-                <p className="mt-2 text-lg font-semibold">{paymentLabels[guest.payment_status]}</p>
-              </div>
-            </section>
+            <PaymentStatusCard
+              reservationStatus={guest.status}
+              paymentStatus={guest.payment_status}
+              ticketQuantity={guest.ticket_quantity}
+              amount={amount}
+            />
+
+            {guest.payment_status === "pending" || guest.payment_status === "rejected" ? (
+              <>
+                {guest.payment_status === "rejected" ? (
+                  <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-5 text-sm text-red-100">
+                    No pudimos confirmar el pago anterior. Revisá los datos y volvé a avisar.
+                  </div>
+                ) : null}
+                <PaymentNoticeForm
+                  accessToken={guest.access_token}
+                  amount={amount}
+                  defaultReference={guest.payment_reference}
+                  defaultProof={guest.payment_proof}
+                  onNotified={loadPortal}
+                />
+              </>
+            ) : null}
+
+            {guest.payment_status === "notified" ? (
+              <section className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-5">
+                <h3 className="text-xl font-semibold">Pago informado</h3>
+                <p className="mt-2 text-sm leading-6 text-amber-100">
+                  Recibimos tu aviso. Producción va a revisar el pago y activar tu QR.
+                </p>
+              </section>
+            ) : null}
+
+            {guest.payment_status === "confirmed" ? (
+              <section className="space-y-4">
+                <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-5">
+                  <h3 className="text-xl font-semibold">Pago confirmado</h3>
+                  <p className="mt-2 text-sm text-emerald-100">
+                    Tus entradas están activas. Mostrá el QR en la puerta.
+                  </p>
+                </div>
+
+                {tickets.length === 0 ? (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-sm text-zinc-300">
+                    El pago está confirmado. Si aún no ves QR, producción está terminando de activarlo.
+                  </div>
+                ) : (
+                  tickets.map((ticket, index) => (
+                    <div key={ticket.id} className="space-y-3">
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                        <p className="text-sm text-zinc-500">Entrada {index + 1}</p>
+                        <p className="mt-1 font-semibold">{ticket.status}</p>
+                      </div>
+                      <QRCodeBox value={getPublicTicketUrl(ticket.token)} size={260} />
+                      <Link
+                        href={`/ticket/${ticket.token}`}
+                        className="flex min-h-12 items-center justify-center rounded-xl bg-emerald-400 px-5 font-semibold text-zinc-950"
+                      >
+                        Ver entrada
+                      </Link>
+                    </div>
+                  ))
+                )}
+              </section>
+            ) : null}
 
             <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-              <h3 className="text-lg font-semibold">Instrucciones</h3>
+              <h3 className="text-lg font-semibold">Resumen</h3>
               <p className="mt-2 text-sm leading-6 text-zinc-300">
-                Recibimos tu solicitud. Guardá este link para consultar el estado. El pago online se
-                va a activar en el próximo paso.
+                Total sugerido: {formatMoney(amount)}. Guardá este link para consultar el estado.
               </p>
-              <button
-                type="button"
-                className="mt-4 min-h-12 w-full rounded-xl border border-white/10 px-5 font-semibold text-zinc-400"
-              >
-                Pago online proximamente
-              </button>
             </section>
 
             <CopyButton value={currentUrl} label="Copiar mi link" />

@@ -76,6 +76,7 @@ export type TicketRecord = {
   id: string;
   event_id: string;
   guest_id: string | null;
+  public_guest_id: string | null;
   token: string;
   status: TicketStatus;
   max_uses: number;
@@ -95,12 +96,16 @@ export type TicketScanRecord = {
 export type PaymentRecord = {
   id: string;
   event_id: string;
+  public_guest_id: string | null;
   guest_id: string | null;
   amount: number;
   status: PaymentStatus;
   method: string | null;
   reference: string | null;
+  proof: string | null;
   notes: string | null;
+  confirmed_at: string | null;
+  rejected_at: string | null;
   created_at: string;
 };
 
@@ -125,6 +130,11 @@ export type PublicGuestRecord = {
   status: PublicGuestStatus;
   payment_status: PaymentStatus;
   access_token: string;
+  payment_reference: string | null;
+  payment_proof: string | null;
+  payment_notified_at: string | null;
+  payment_confirmed_at: string | null;
+  internal_guest_id: string | null;
   created_at: string;
 };
 

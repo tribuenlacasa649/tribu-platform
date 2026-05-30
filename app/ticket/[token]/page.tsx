@@ -25,7 +25,7 @@ export default function PublicTicketPage() {
     async function loadTicket() {
       const { data, error: requestError } = await supabase
         .from("tickets")
-        .select("id, event_id, guest_id, token, status, max_uses, used_count, created_at, events(id, name, location, starts_at), guests(id, name, contact)")
+        .select("id, event_id, guest_id, public_guest_id, token, status, max_uses, used_count, created_at, events(id, name, location, starts_at), guests(id, name, contact)")
         .eq("token", params.token)
         .maybeSingle();
 
