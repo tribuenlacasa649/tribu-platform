@@ -121,39 +121,31 @@ export function PaymentNoticeForm({
   const hasProofFile = Boolean(selectedFile || proofFileUrl);
   const canSubmit = hasValidReference || hasProofFile;
   const showValidationWarning = !canSubmit && (reference.length > 0 || proof.length > 0);
-  const suggestedReference = `TRIBU-${accessToken.slice(0, 8).toUpperCase()}`;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+    <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-5">
       <div>
         <h3 className="text-xl font-semibold">Pagar / avisar pago</h3>
-        <p className="mt-2 text-sm leading-6 text-zinc-400">
+        <p className="mt-2 text-sm leading-6 text-[#6F7668]">
           Transferí y avisá el comprobante. Producción revisa y activa tu QR.
         </p>
       </div>
 
       <div className="grid gap-3">
-        <div className="rounded-xl bg-zinc-950/70 p-4">
-          <p className="text-sm text-zinc-500">Alias</p>
+        <div className="rounded-xl bg-[#F6F1E8]/70 p-4">
+          <p className="text-sm text-[#7F836F]">Alias</p>
           <p className="mt-1 text-lg font-semibold">{paymentAlias}</p>
           <div className="mt-3">
             <CopyButton value={paymentAlias} label="Copiar alias" />
           </div>
         </div>
-        <div className="rounded-xl bg-zinc-950/70 p-4">
-          <p className="text-sm text-zinc-500">Titular</p>
+        <div className="rounded-xl bg-[#F6F1E8]/70 p-4">
+          <p className="text-sm text-[#7F836F]">Titular</p>
           <p className="mt-1 font-semibold">{paymentHolder}</p>
         </div>
-        <div className="rounded-xl bg-zinc-950/70 p-4">
-          <p className="text-sm text-zinc-500">Monto</p>
+        <div className="rounded-xl bg-[#F6F1E8]/70 p-4">
+          <p className="text-sm text-[#7F836F]">Monto</p>
           <p className="mt-1 text-lg font-semibold">{amountLabel}</p>
-        </div>
-        <div className="rounded-xl bg-zinc-950/70 p-4">
-          <p className="text-sm text-zinc-500">Referencia sugerida</p>
-          <p className="mt-1 break-all text-lg font-semibold">{suggestedReference}</p>
-          <div className="mt-3">
-            <CopyButton value={suggestedReference} label="Copiar referencia" />
-          </div>
         </div>
       </div>
 
@@ -164,7 +156,7 @@ export function PaymentNoticeForm({
       ) : null}
 
       <div className="space-y-2">
-        <label htmlFor="payment_reference" className="text-sm font-semibold text-zinc-200">
+        <label htmlFor="payment_reference" className="text-sm font-semibold text-[#18251A]">
           Numero de operacion / referencia
         </label>
         <input
@@ -174,10 +166,10 @@ export function PaymentNoticeForm({
             setReference(event.target.value);
             setError("");
           }}
-          className={`min-h-12 w-full rounded-xl border bg-zinc-950 px-4 text-white outline-none focus:ring-2 ${
+          className={`min-h-12 w-full rounded-xl border bg-[#F6F1E8] px-4 text-[#18251A] outline-none focus:ring-2 ${
             showValidationWarning
               ? "border-red-400 focus:border-red-300 focus:ring-red-400/20"
-              : "border-white/10 focus:border-emerald-400 focus:ring-emerald-400/20"
+              : "border-[#18251A]/10 focus:border-[#315C38] focus:ring-[#315C38]/20"
           }`}
           placeholder="Ej: 123456789"
         />
@@ -189,7 +181,7 @@ export function PaymentNoticeForm({
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="payment_proof" className="text-sm font-semibold text-zinc-200">
+        <label htmlFor="payment_proof" className="text-sm font-semibold text-[#18251A]">
           Link o texto del comprobante
         </label>
         <textarea
@@ -200,13 +192,13 @@ export function PaymentNoticeForm({
             setError("");
           }}
           rows={3}
-          className="w-full rounded-xl border border-white/10 bg-zinc-950 px-4 py-3 text-white outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+          className="w-full rounded-xl border border-[#18251A]/10 bg-[#F6F1E8] px-4 py-3 text-[#18251A] outline-none focus:border-[#315C38] focus:ring-2 focus:ring-[#315C38]/20"
           placeholder="Pegá el texto, link o detalle del comprobante"
         />
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="payment_file" className="text-sm font-semibold text-zinc-200">
+        <label htmlFor="payment_file" className="text-sm font-semibold text-[#18251A]">
           Foto del comprobante
         </label>
         <input
@@ -214,15 +206,15 @@ export function PaymentNoticeForm({
           type="file"
           accept="image/jpeg,image/png,image/webp"
           onChange={handleFileChange}
-          className="block w-full rounded-xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-zinc-200 file:mr-4 file:rounded-lg file:border-0 file:bg-emerald-400 file:px-3 file:py-2 file:font-semibold file:text-zinc-950"
+          className="block w-full rounded-xl border border-[#18251A]/10 bg-[#F6F1E8] px-4 py-3 text-sm text-[#18251A] file:mr-4 file:rounded-lg file:border-0 file:bg-[#315C38] file:px-3 file:py-2 file:font-semibold file:text-[#FFFDF8]"
         />
-        <p className="text-xs text-zinc-500">JPG, PNG o WEBP. Máximo 5 MB.</p>
+        <p className="text-xs text-[#7F836F]">JPG, PNG o WEBP. Máximo 5 MB.</p>
         {proofFileUrl ? (
           <a
             href={proofFileUrl}
             target="_blank"
             rel="noreferrer"
-            className="block text-sm font-semibold text-emerald-300"
+            className="block text-sm font-semibold text-[#315C38]"
           >
             Ver comprobante cargado
           </a>
@@ -232,7 +224,7 @@ export function PaymentNoticeForm({
       <button
         type="submit"
         disabled={isSaving || !canSubmit}
-        className="min-h-14 w-full rounded-xl bg-emerald-400 px-5 text-lg font-semibold text-zinc-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
+        className="min-h-14 w-full rounded-xl bg-[#315C38] px-5 text-lg font-semibold text-[#FFFDF8] transition hover:bg-[#294F2F] disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isSaving ? "Enviando..." : "Ya pagué"}
       </button>

@@ -47,7 +47,7 @@ export default function GuestsPage() {
         .order("created_at", { ascending: false }),
       supabase
         .from("public_guests")
-        .select("id, event_id, full_name, phone, instagram, ticket_quantity, food_preferences, notes, status, payment_status, access_token, payment_reference, payment_proof, payment_proof_file_url, payment_notified_at, payment_confirmed_at, internal_guest_id, created_at")
+        .select("id, event_id, full_name, phone, country_code, instagram, ticket_quantity, food_preferences, notes, status, payment_status, access_token, payment_reference, payment_proof, payment_proof_file_url, payment_notified_at, payment_confirmed_at, internal_guest_id, created_at")
         .eq("event_id", params.id),
       supabase
         .from("tickets")
@@ -91,16 +91,16 @@ export default function GuestsPage() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
         <EventContextNav eventId={params.id} />
 
-        <header className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:flex-row sm:items-center sm:justify-between">
+        <header className="flex flex-col gap-3 rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <Link href={`/events/${params.id}`} className="text-sm font-semibold text-emerald-300">
+            <Link href={`/events/${params.id}`} className="text-sm font-semibold text-[#315C38]">
               Evento / Invitados
             </Link>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight">Invitados</h1>
           </div>
           <Link
             href={`/events/${params.id}/guests/new`}
-            className="flex min-h-12 w-full items-center justify-center rounded-lg bg-emerald-400 px-5 text-base font-semibold text-zinc-950 transition hover:bg-emerald-300 sm:w-auto"
+            className="flex min-h-12 w-full items-center justify-center rounded-lg bg-[#315C38] px-5 text-base font-semibold text-[#FFFDF8] transition hover:bg-[#294F2F] sm:w-auto"
           >
             Nuevo invitado
           </Link>
@@ -113,7 +113,7 @@ export default function GuestsPage() {
         ) : null}
 
         {isLoading ? (
-          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-zinc-300">
+          <div className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-5 text-[#42503E]">
             Cargando invitados...
           </div>
         ) : guests.length === 0 ? (
@@ -137,12 +137,12 @@ export default function GuestsPage() {
               return (
               <details
                 key={guest.id}
-                className="group rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20"
+                className="group rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10"
               >
                 <summary className="flex cursor-pointer list-none items-start justify-between gap-3">
                   <div>
                     <h2 className="text-lg font-semibold leading-tight">{guest.name}</h2>
-                    <p className="mt-1 text-sm text-zinc-400">
+                    <p className="mt-1 text-sm text-[#6F7668]">
                       {guest.contact || "Sin contacto"}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -156,34 +156,28 @@ export default function GuestsPage() {
                       ) : null}
                     </div>
                   </div>
-                  <span className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-zinc-300 group-open:bg-white/10">
+                  <span className="rounded-lg border border-[#18251A]/10 px-3 py-2 text-xs font-semibold text-[#42503E] group-open:bg-white/10">
                     Detalle
                   </span>
                 </summary>
 
                 <div className="mt-4 grid gap-3 text-sm">
-                  <div className="rounded-lg bg-zinc-950/70 p-3">
-                    <p className="text-xs text-zinc-500">Preferencia</p>
-                    <p className="mt-1 font-medium text-zinc-100">
+                  <div className="rounded-lg bg-[#F6F1E8]/70 p-3">
+                    <p className="text-xs text-[#7F836F]">Preferencia</p>
+                    <p className="mt-1 font-medium text-[#18251A]">
                       {guest.food_preferences || "Sin preferencia"}
                     </p>
                   </div>
-                  <div className="rounded-lg bg-zinc-950/70 p-3">
-                    <p className="text-xs text-zinc-500">Entradas</p>
-                    <p className="mt-1 font-medium text-zinc-100">
+                  <div className="rounded-lg bg-[#F6F1E8]/70 p-3">
+                    <p className="text-xs text-[#7F836F]">Entradas</p>
+                    <p className="mt-1 font-medium text-[#18251A]">
                       {guest.ticket_quantity} solicitadas · {guestTickets.length} QR
                     </p>
                   </div>
-                  {guest.notes ? (
-                    <div className="rounded-lg bg-zinc-950/70 p-3">
-                      <p className="text-xs text-zinc-500">Notas</p>
-                      <p className="mt-1 font-medium text-zinc-100">{guest.notes}</p>
-                    </div>
-                  ) : null}
                   {publicGuest ? (
-                    <div className="rounded-lg bg-zinc-950/70 p-3">
-                      <p className="text-xs text-zinc-500">Pago</p>
-                      <p className="mt-1 font-medium text-zinc-100">
+                    <div className="rounded-lg bg-[#F6F1E8]/70 p-3">
+                      <p className="text-xs text-[#7F836F]">Pago</p>
+                      <p className="mt-1 font-medium text-[#18251A]">
                         {paymentLabels[publicGuest.payment_status]} · {publicGuest.payment_reference || "Sin referencia"}
                       </p>
                       {publicGuest.payment_proof_file_url ? (
@@ -191,7 +185,7 @@ export default function GuestsPage() {
                           href={publicGuest.payment_proof_file_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="mt-2 inline-block font-semibold text-emerald-300"
+                          className="mt-2 inline-block font-semibold text-[#315C38]"
                         >
                           Ver comprobante
                         </a>
@@ -199,14 +193,14 @@ export default function GuestsPage() {
                     </div>
                   ) : null}
                   {guestTickets.length ? (
-                    <div className="rounded-lg bg-zinc-950/70 p-3">
-                      <p className="text-xs text-zinc-500">Tickets</p>
+                    <div className="rounded-lg bg-[#F6F1E8]/70 p-3">
+                      <p className="text-xs text-[#7F836F]">Tickets</p>
                       <div className="mt-2 grid gap-2">
                         {guestTickets.map((ticket, index) => (
                           <Link
                             key={ticket.id}
                             href={`/events/${params.id}/tickets/${ticket.id}`}
-                            className="rounded-lg border border-white/10 px-3 py-2 font-semibold text-emerald-300"
+                            className="rounded-lg border border-[#18251A]/10 px-3 py-2 font-semibold text-[#315C38]"
                           >
                             Entrada {index + 1} · {ticket.status}
                           </Link>
@@ -219,13 +213,13 @@ export default function GuestsPage() {
                 <div className="mt-4 grid grid-cols-3 gap-2">
                   <Link
                     href={`/events/${params.id}/guests/${guest.id}`}
-                    className="flex min-h-11 items-center justify-center rounded-lg bg-emerald-400 px-3 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-300"
+                    className="flex min-h-11 items-center justify-center rounded-lg bg-[#315C38] px-3 text-sm font-semibold text-[#FFFDF8] transition hover:bg-[#294F2F]"
                   >
                     Ver
                   </Link>
                   <Link
                     href={`/events/${params.id}/guests/${guest.id}/edit`}
-                    className="flex min-h-11 items-center justify-center rounded-lg border border-white/10 px-3 text-sm font-semibold text-zinc-100 transition hover:bg-white/5"
+                    className="flex min-h-11 items-center justify-center rounded-lg border border-[#18251A]/10 px-3 text-sm font-semibold text-[#18251A] transition hover:bg-[#F0EADF]"
                   >
                     Editar
                   </Link>
@@ -233,22 +227,22 @@ export default function GuestsPage() {
                     guestId={guest.id}
                     eventId={params.id}
                     onDeleted={loadGuests}
-                    className="min-h-11 rounded-lg bg-red-500 px-3 text-sm font-semibold text-white transition hover:bg-red-400 disabled:opacity-60"
+                    className="min-h-11 rounded-lg bg-red-500 px-3 text-sm font-semibold text-[#18251A] transition hover:bg-red-400 disabled:opacity-60"
                   />
                 </div>
                 {ticketUrls.length ? (
-                  <div className="mt-2 grid gap-2 rounded-lg border border-white/10 p-3">
+                  <div className="mt-2 grid gap-2 rounded-lg border border-[#18251A]/10 p-3">
                     {whatsappUrl ? (
                       <a
                         href={whatsappUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex min-h-10 items-center justify-center rounded-lg bg-emerald-400 px-3 text-sm font-semibold text-zinc-950"
+                        className="flex min-h-10 items-center justify-center rounded-lg bg-[#315C38] px-3 text-sm font-semibold text-[#FFFDF8]"
                       >
                         Enviar QR por WhatsApp
                       </a>
                     ) : null}
-                    <p className="break-all text-xs text-zinc-500">{ticketUrls[0]}</p>
+                    <p className="break-all text-xs text-[#7F836F]">{ticketUrls[0]}</p>
                   </div>
                 ) : null}
               </details>

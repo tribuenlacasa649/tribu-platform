@@ -31,7 +31,7 @@ export default function EventsPage() {
     async function loadEvents() {
       const { data, error: requestError } = await supabase
         .from("events")
-        .select("id, name, description, location, starts_at, ends_at, status, created_at")
+        .select("id, name, description, location, location_name, location_address, location_maps_url, event_banner_url, starts_at, ends_at, status, created_at")
         .order("created_at", { ascending: false });
 
       if (requestError) {
@@ -49,14 +49,14 @@ export default function EventsPage() {
   return (
     <AppShell title="Eventos">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <header className="flex flex-col gap-4 rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <header className="flex flex-col gap-4 rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div>
-            <p className="text-sm font-medium text-emerald-300">Gestion</p>
+            <p className="text-sm font-medium text-[#315C38]">Gestion</p>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight">Eventos</h1>
           </div>
           <Link
             href="/events/new"
-            className="flex min-h-12 w-full items-center justify-center rounded-lg bg-emerald-400 px-5 text-base font-semibold text-zinc-950 transition hover:bg-emerald-300 sm:w-auto"
+            className="flex min-h-12 w-full items-center justify-center rounded-lg bg-[#315C38] px-5 text-base font-semibold text-[#FFFDF8] transition hover:bg-[#294F2F] sm:w-auto"
           >
             Nuevo evento
           </Link>
@@ -69,7 +69,7 @@ export default function EventsPage() {
         ) : null}
 
         {isLoading ? (
-          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-zinc-300">
+          <div className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-5 text-[#42503E]">
             Cargando eventos...
           </div>
         ) : events.length === 0 ? (
@@ -85,14 +85,19 @@ export default function EventsPage() {
               <Link
                 key={event.id}
                 href={`/events/${event.id}`}
-                className="group rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 transition hover:border-emerald-400/40 hover:bg-white/[0.06]"
+                className="group overflow-hidden rounded-[1.5rem] border border-[#18251A]/10 bg-[#FFFDF8] shadow-2xl shadow-[#294F2F]/10 transition hover:border-[#315C38]/30 hover:bg-[#FFFDF8]"
               >
+                {event.event_banner_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={event.event_banner_url} alt={event.name} className="h-32 w-full object-cover" />
+                ) : null}
+                <div className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h2 className="text-xl font-semibold leading-tight text-white">
+                    <h2 className="text-xl font-semibold leading-tight text-[#18251A]">
                       {event.name}
                     </h2>
-                    <p className="mt-2 text-sm text-zinc-400">
+                    <p className="mt-2 text-sm text-[#6F7668]">
                       {event.location || "Sin ubicacion"}
                     </p>
                   </div>
@@ -102,24 +107,25 @@ export default function EventsPage() {
                 </div>
 
                 <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
-                  <div className="rounded-lg bg-zinc-950/70 p-3">
-                    <p className="text-zinc-500">Creado</p>
-                    <p className="mt-1 font-medium text-zinc-100">
+                  <div className="rounded-lg bg-[#F6F1E8]/70 p-3">
+                    <p className="text-[#7F836F]">Creado</p>
+                    <p className="mt-1 font-medium text-[#18251A]">
                       {formatDate(event.created_at)}
                     </p>
                   </div>
-                  <div className="rounded-lg bg-zinc-950/70 p-3">
-                    <p className="text-zinc-500">Inicio</p>
-                    <p className="mt-1 font-medium text-zinc-100">
+                  <div className="rounded-lg bg-[#F6F1E8]/70 p-3">
+                    <p className="text-[#7F836F]">Inicio</p>
+                    <p className="mt-1 font-medium text-[#18251A]">
                       {formatDate(event.starts_at)}
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium text-zinc-400">
-                  <span className="rounded-full bg-zinc-900 px-3 py-1">Invitados</span>
-                  <span className="rounded-full bg-zinc-900 px-3 py-1">QR</span>
-                  <span className="rounded-full bg-zinc-900 px-3 py-1">Scanner QR</span>
+                <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium text-[#6F7668]">
+                  <span className="rounded-full bg-[#F0EADF] px-3 py-1">Invitados</span>
+                  <span className="rounded-full bg-[#F0EADF] px-3 py-1">QR</span>
+                  <span className="rounded-full bg-[#F0EADF] px-3 py-1">Scanner QR</span>
+                </div>
                 </div>
               </Link>
             ))}

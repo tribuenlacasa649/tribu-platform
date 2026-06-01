@@ -16,7 +16,7 @@ export default function PublicHomePage() {
     async function loadEvents() {
       const { data, error: requestError } = await supabase
         .from("events")
-        .select("id, name, description, location, starts_at, ends_at, status, slug, is_public, public_title, public_description, ticket_price, public_status, created_at")
+        .select("id, name, description, location, location_name, location_address, location_maps_url, event_banner_url, starts_at, ends_at, status, slug, is_public, public_title, public_description, ticket_price, public_status, created_at")
         .eq("is_public", true)
         .eq("public_status", "published")
         .order("starts_at", { ascending: true });
@@ -34,14 +34,14 @@ export default function PublicHomePage() {
   }, [supabase]);
 
   return (
-    <main className="min-h-screen bg-zinc-950 px-4 py-6 text-white">
+    <main className="min-h-screen bg-[#F6F1E8] px-4 py-6 text-[#18251A]">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <header className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20">
-          <Link href="/p" className="text-sm font-semibold text-emerald-300">
+        <header className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-5 shadow-2xl shadow-[#294F2F]/10">
+          <Link href="/p" className="text-sm font-semibold text-[#315C38]">
             Tribu Platform
           </Link>
           <h1 className="mt-3 text-4xl font-semibold tracking-tight">Eventos</h1>
-          <p className="mt-2 text-sm leading-6 text-zinc-400">
+          <p className="mt-2 text-sm leading-6 text-[#6F7668]">
             Elegi el evento y reservá tu entrada.
           </p>
         </header>
@@ -53,13 +53,13 @@ export default function PublicHomePage() {
         ) : null}
 
         {isLoading ? (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-zinc-300">
+          <div className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-5 text-[#42503E]">
             Cargando eventos...
           </div>
         ) : events.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-8 text-center">
+          <div className="rounded-2xl border border-dashed border-[#18251A]/15 bg-[#FFFDF8] p-8 text-center">
             <h2 className="text-xl font-semibold">No hay eventos publicados</h2>
-            <p className="mt-2 text-sm text-zinc-400">Volvé a revisar más tarde.</p>
+            <p className="mt-2 text-sm text-[#6F7668]">Volvé a revisar más tarde.</p>
           </div>
         ) : (
           <section className="grid gap-4">

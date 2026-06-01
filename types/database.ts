@@ -24,6 +24,10 @@ export type EventRecord = {
   name: string;
   description: string | null;
   location: string | null;
+  location_name: string | null;
+  location_address: string | null;
+  location_maps_url: string | null;
+  event_banner_url: string | null;
   starts_at: string | null;
   ends_at: string | null;
   status: EventStatus;
@@ -40,6 +44,10 @@ export type EventFormValues = {
   name: string;
   description: string;
   location: string;
+  location_name: string;
+  location_address: string;
+  location_maps_url: string;
+  event_banner_url: string;
   starts_at: string;
   ends_at: string;
   status: EventStatus;
@@ -115,7 +123,19 @@ export type TicketWithGuest = TicketRecord & {
 };
 
 export type PublicTicket = TicketRecord & {
-  events: Pick<EventRecord, "id" | "name" | "location" | "starts_at"> | null;
+  events:
+    | Pick<
+        EventRecord,
+        | "id"
+        | "name"
+        | "location"
+        | "location_name"
+        | "location_address"
+        | "location_maps_url"
+        | "event_banner_url"
+        | "starts_at"
+      >
+    | null;
   guests: Pick<GuestRecord, "id" | "name" | "contact"> | null;
 };
 
@@ -124,6 +144,7 @@ export type PublicGuestRecord = {
   event_id: string;
   full_name: string;
   phone: string;
+  country_code: string | null;
   instagram: string | null;
   ticket_quantity: number;
   food_preferences: string | null;
@@ -148,6 +169,10 @@ export type PublicGuestWithEvent = PublicGuestRecord & {
         | "name"
         | "public_title"
         | "location"
+        | "location_name"
+        | "location_address"
+        | "location_maps_url"
+        | "event_banner_url"
         | "starts_at"
         | "ticket_price"
       >

@@ -21,8 +21,8 @@ export function EventContextNav({ eventId }: EventContextNavProps) {
             href={link.href}
             className={`flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold transition ${
               activeModule === link.key
-                ? "bg-emerald-400 text-zinc-950"
-                : "border border-white/10 text-zinc-200 hover:bg-white/5"
+                ? "bg-[#315C38] text-[#FFFDF8]"
+                : "border border-[#18251A]/10 text-[#18251A] hover:bg-[#F0EADF]"
             }`}
           >
             {link.label}

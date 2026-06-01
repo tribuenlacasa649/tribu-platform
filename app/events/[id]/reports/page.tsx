@@ -109,12 +109,12 @@ export default function ReportsPage() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <EventContextNav eventId={params.id} />
 
-        <header className="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:p-6">
-          <Link href={`/events/${params.id}`} className="text-sm font-semibold text-emerald-300">
+        <header className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10 sm:p-6">
+          <Link href={`/events/${params.id}`} className="text-sm font-semibold text-[#315C38]">
             Volver al evento
           </Link>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">Reportes</h1>
-          <p className="mt-2 text-sm text-zinc-400">Resumen operativo simple.</p>
+          <p className="mt-2 text-sm text-[#6F7668]">Resumen operativo simple.</p>
         </header>
 
         {error ? (
@@ -124,7 +124,7 @@ export default function ReportsPage() {
         ) : null}
 
         {isLoading ? (
-          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-zinc-300">
+          <div className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-5 text-[#42503E]">
             Cargando reportes...
           </div>
         ) : (

@@ -6,7 +6,7 @@
 2. Completa registro publico.
 3. La app crea inmediatamente `public_guest` y `guest` interno.
 4. Entra a `/p/guest/[accessToken]`.
-5. Ve alias, titular, monto sugerido y referencia sugerida.
+5. Ve alias, titular y monto sugerido.
 6. Avisa pago con:
    - referencia,
    - o imagen del comprobante.

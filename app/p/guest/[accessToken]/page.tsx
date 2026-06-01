@@ -8,9 +8,11 @@ import { CopyButton } from "../../../../components/CopyButton";
 import { PaymentNoticeForm } from "../../../../components/PaymentNoticeForm";
 import { PaymentStatusCard } from "../../../../components/PaymentStatusCard";
 import { QRCodeBox } from "../../../../components/QRCodeBox";
+import { LocationCard } from "../../../../components/LocationCard";
 import { formatMoney } from "../../../../lib/payments";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase";
 import { getPublicTicketUrl } from "../../../../lib/tickets";
+import { createTicketWhatsAppMessage, createWhatsAppUrl } from "../../../../lib/whatsapp";
 import type { PaymentStatus, PublicGuestStatus, TicketStatus } from "../../../../types/database";
 
 type PublicGuestPortalRecord = {
@@ -18,6 +20,7 @@ type PublicGuestPortalRecord = {
   event_id: string;
   full_name: string;
   phone: string;
+  country_code: string | null;
   instagram: string | null;
   ticket_quantity: number;
   food_preferences: string | null;
@@ -35,6 +38,10 @@ type PublicGuestPortalRecord = {
   event_name: string | null;
   event_public_title: string | null;
   event_location: string | null;
+  event_location_name: string | null;
+  event_location_address: string | null;
+  event_location_maps_url: string | null;
+  event_banner_url: string | null;
   event_starts_at: string | null;
   event_ticket_price: number | null;
 };
@@ -126,17 +133,34 @@ export default function PublicGuestPortalPage() {
   const currentUrl =
     typeof window === "undefined" ? `/p/guest/${params.accessToken}` : window.location.href;
   const amount = (guest?.event_ticket_price ?? 0) * (guest?.ticket_quantity ?? 0);
+  const ticketUrls = tickets.map((ticket) => getPublicTicketUrl(ticket.token));
+  const whatsappUrl =
+    guest && ticketUrls.length
+      ? createWhatsAppUrl(
+          `${guest.country_code || "+54"}${guest.phone}`,
+          createTicketWhatsAppMessage(guest.full_name, ticketUrls, {
+            title: guest.event_public_title || guest.event_name,
+            location: guest.event_location_address || guest.event_location,
+          })
+        )
+      : "";
 
   return (
-    <main className="min-h-screen bg-zinc-950 px-4 py-6 text-white">
-      <div className="mx-auto flex w-full max-w-md flex-col gap-5">
-        <header className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-center shadow-2xl shadow-black/20">
-          <p className="text-sm font-semibold text-emerald-300">Tribu Platform</p>
-          <h1 className="mt-2 text-3xl font-semibold">Tu reserva</h1>
+    <main className="min-h-screen bg-[#F6F1E8] px-4 py-6 text-[#18251A]">
+      <div className="mx-auto flex w-full max-w-md flex-col gap-4">
+        <header className="overflow-hidden rounded-[1.5rem] border border-[#18251A]/10 bg-[#FFFDF8] text-center shadow-2xl shadow-[#294F2F]/10">
+          {guest?.event_banner_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={guest.event_banner_url} alt={guest.event_public_title || guest.event_name || "Evento"} className="h-36 w-full object-cover" />
+          ) : null}
+          <div className="p-4">
+          <p className="text-sm font-semibold text-[#315C38]">Tribu Platform</p>
+          <h1 className="mt-1 text-2xl font-semibold">Tu reserva</h1>
+          </div>
         </header>
 
         {isLoading ? (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-zinc-300">
+          <div className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-5 text-[#42503E]">
             Cargando...
           </div>
         ) : error ? (
@@ -145,10 +169,10 @@ export default function PublicGuestPortalPage() {
           </div>
         ) : guest ? (
           <>
-            <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20">
+            <section className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10">
               <Badge tone={getTone(guest.status)}>{statusLabels[guest.status]}</Badge>
-              <h2 className="mt-4 text-2xl font-semibold">{guest.full_name}</h2>
-              <p className="mt-2 text-zinc-400">
+              <h2 className="mt-3 text-2xl font-semibold">{guest.full_name}</h2>
+              <p className="mt-2 text-[#6F7668]">
                 {guest.event_public_title || guest.event_name || "Evento"}
               </p>
             </section>
@@ -189,46 +213,63 @@ export default function PublicGuestPortalPage() {
 
             {guest.payment_status === "confirmed" ? (
               <section className="space-y-4">
-                <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-5">
+                <div className="rounded-2xl border border-[#315C38]/20 bg-[#315C38]/10 p-5">
                   <h3 className="text-xl font-semibold">Pago confirmado</h3>
-                  <p className="mt-2 text-sm text-emerald-100">
+                  <p className="mt-2 text-sm text-[#294F2F]">
                     Tus entradas están activas. Mostrá el QR en la puerta.
                   </p>
                 </div>
 
                 {tickets.length === 0 ? (
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-sm text-zinc-300">
+                  <div className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-5 text-sm text-[#42503E]">
                     El pago está confirmado. Si aún no ves QR, producción está terminando de activarlo.
                   </div>
                 ) : (
                   tickets.map((ticket, index) => (
                     <div key={ticket.id} className="space-y-3">
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                        <p className="text-sm text-zinc-500">Entrada {index + 1}</p>
+                      <div className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-4">
+                        <p className="text-sm text-[#7F836F]">Entrada {index + 1}</p>
                         <p className="mt-1 font-semibold">{ticket.status}</p>
                       </div>
                       <QRCodeBox value={getPublicTicketUrl(ticket.token)} size={260} />
                       <Link
                         href={`/ticket/${ticket.token}`}
-                        className="flex min-h-12 items-center justify-center rounded-xl bg-emerald-400 px-5 font-semibold text-zinc-950"
+                        className="flex min-h-12 items-center justify-center rounded-xl bg-[#315C38] px-5 font-semibold text-[#FFFDF8]"
                       >
                         Ver entrada
                       </Link>
                     </div>
                   ))
                 )}
+                {whatsappUrl ? (
+                  <a
+                    href={whatsappUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex min-h-12 items-center justify-center rounded-xl bg-[#315C38] px-5 font-semibold text-[#FFFDF8]"
+                  >
+                    Enviar a WhatsApp
+                  </a>
+                ) : null}
               </section>
             ) : null}
 
-            <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-              <h3 className="text-lg font-semibold">Resumen</h3>
-              <p className="mt-2 text-sm leading-6 text-zinc-300">
-                Total sugerido: {formatMoney(amount)}. Guardá este link para consultar el estado.
+            <LocationCard
+              name={guest.event_location_name || guest.event_location}
+              address={guest.event_location_address}
+              mapsUrl={guest.event_location_maps_url}
+              compact={guest.payment_status !== "confirmed"}
+            />
+
+            <section className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-4">
+              <h3 className="text-lg font-semibold">Evento</h3>
+              <p className="mt-2 text-sm leading-6 text-[#42503E]">
+                Total: {formatMoney(amount)}. Guardá este link para consultar tu estado.
               </p>
             </section>
 
             <CopyButton value={currentUrl} label="Copiar mi link" />
-            <Link href="/p" className="text-center text-sm font-semibold text-emerald-300">
+            <Link href="/p" className="text-center text-sm font-semibold text-[#315C38]">
               Ver otros eventos
             </Link>
           </>

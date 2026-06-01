@@ -84,7 +84,7 @@ export default function TicketDetailPage() {
   return (
     <AppShell title="Ticket">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <Link href={`/events/${params.id}/tickets`} className="text-sm font-semibold text-emerald-300">
+        <Link href={`/events/${params.id}/tickets`} className="text-sm font-semibold text-[#315C38]">
           Volver a entradas
         </Link>
 
@@ -95,19 +95,19 @@ export default function TicketDetailPage() {
         ) : null}
 
         {isLoading ? (
-          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-zinc-300">
+          <div className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-5 text-[#42503E]">
             Cargando ticket...
           </div>
         ) : ticket ? (
           <>
-            <section className="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:p-6">
+            <section className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10 sm:p-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <Badge tone={ticket.status === "available" ? "success" : ticket.status === "used" ? "warning" : "danger"}>
                     {ticketStatusLabels[ticket.status]}
                   </Badge>
                   <h1 className="mt-3 text-3xl font-semibold">{ticket.guests?.name || "Ticket"}</h1>
-                  <p className="mt-2 break-all text-sm text-zinc-400">{ticket.token}</p>
+                  <p className="mt-2 break-all text-sm text-[#6F7668]">{ticket.token}</p>
                 </div>
               </div>
             </section>
@@ -118,21 +118,21 @@ export default function TicketDetailPage() {
               <button
                 type="button"
                 onClick={() => setStatus("available")}
-                className="min-h-12 rounded-lg bg-emerald-400 px-4 font-semibold text-zinc-950"
+                className="min-h-12 rounded-lg bg-[#315C38] px-4 font-semibold text-[#FFFDF8]"
               >
                 Disponible
               </button>
               <button
                 type="button"
                 onClick={() => setStatus("used")}
-                className="min-h-12 rounded-lg bg-amber-400 px-4 font-semibold text-zinc-950"
+                className="min-h-12 rounded-lg bg-amber-400 px-4 font-semibold text-[#FFFDF8]"
               >
                 Usada
               </button>
               <button
                 type="button"
                 onClick={() => setStatus("cancelled")}
-                className="min-h-12 rounded-lg bg-red-500 px-4 font-semibold text-white"
+                className="min-h-12 rounded-lg bg-red-500 px-4 font-semibold text-[#18251A]"
               >
                 Cancelar
               </button>

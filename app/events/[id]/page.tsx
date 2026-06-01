@@ -7,8 +7,9 @@ import { AppShell } from "../../../components/AppShell";
 import { Badge, eventStatusTone } from "../../../components/Badge";
 import { CopyButton } from "../../../components/CopyButton";
 import { EventContextNav } from "../../../components/EventContextNav";
+import { EventOverview } from "../../../components/EventOverview";
 import { EventModuleGrid } from "../../../components/EventModuleGrid";
-import { StatCard } from "../../../components/StatCard";
+import { LocationCard } from "../../../components/LocationCard";
 import { getAbsolutePublicEventUrl } from "../../../lib/public-routes";
 import { createSupabaseBrowserClient } from "../../../lib/supabase";
 import type { EventRecord } from "../../../types/database";
@@ -54,7 +55,7 @@ export default function EventDetailPage() {
     async function loadEvent() {
       const { data, error: requestError } = await supabase
         .from("events")
-        .select("id, name, description, location, starts_at, ends_at, status, slug, is_public, public_title, public_description, ticket_price, public_status, created_at")
+        .select("id, name, description, location, location_name, location_address, location_maps_url, event_banner_url, starts_at, ends_at, status, slug, is_public, public_title, public_description, ticket_price, public_status, created_at")
         .eq("id", params.id)
         .single();
 
@@ -123,35 +124,39 @@ export default function EventDetailPage() {
         <EventContextNav eventId={params.id} />
 
         <header className="space-y-3">
-          <Link href="/events" className="text-sm font-semibold text-emerald-300">
+          <Link href="/events" className="text-sm font-semibold text-[#315C38]">
             Volver a eventos
           </Link>
 
           {isLoading ? (
-            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-zinc-300">
+            <div className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-5 text-[#42503E]">
               Cargando evento...
             </div>
           ) : event ? (
-            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="overflow-hidden rounded-[1.5rem] border border-[#18251A]/10 bg-[#FFFDF8] shadow-2xl shadow-[#294F2F]/10">
+              {event.event_banner_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={event.event_banner_url} alt={event.name} className="h-44 w-full object-cover" />
+              ) : null}
+              <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge tone={eventStatusTone(event.status)}>
                       {eventStatusLabels[event.status]}
                     </Badge>
-                    <span className="text-sm text-zinc-500">
+                    <span className="text-sm text-[#7F836F]">
                       Creado {formatDateTime(event.created_at)}
                     </span>
                   </div>
                   <h1 className="mt-2 text-2xl font-semibold tracking-tight">
                     {event.name}
                   </h1>
-                  <p className="mt-2 text-zinc-400">{event.location || "Sin ubicacion"}</p>
+                  <p className="mt-2 text-[#6F7668]">{event.location || "Sin ubicacion"}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-2 sm:min-w-48">
                   <Link
                     href={`/events/${event.id}/edit`}
-                    className="flex min-h-10 items-center justify-center rounded-lg border border-white/10 px-4 text-sm font-semibold text-zinc-100 transition hover:bg-white/5"
+                    className="flex min-h-10 items-center justify-center rounded-lg border border-[#18251A]/10 px-4 text-sm font-semibold text-[#18251A] transition hover:bg-[#F0EADF]"
                   >
                     Editar
                   </Link>
@@ -159,7 +164,7 @@ export default function EventDetailPage() {
                     type="button"
                     onClick={handleDelete}
                     disabled={isDeleting}
-                    className="min-h-10 rounded-lg bg-red-500 px-4 text-sm font-semibold text-white transition hover:bg-red-400 disabled:opacity-60"
+                    className="min-h-10 rounded-lg bg-red-500 px-4 text-sm font-semibold text-[#18251A] transition hover:bg-red-400 disabled:opacity-60"
                   >
                     {isDeleting ? "Eliminando..." : "Eliminar"}
                   </button>
@@ -177,14 +182,9 @@ export default function EventDetailPage() {
 
         {event ? (
           <>
-            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <StatCard label="Invitados" value={stats.guests} />
-              <StatCard label="Tickets" value={stats.tickets} />
-              <StatCard label="Scanner OK" value={stats.usedTickets} />
-              <StatCard label="Pagos OK" value={stats.confirmedPayments} />
-            </section>
+            <EventOverview eventId={event.id} stats={stats} />
 
-            <section className="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:p-6">
+            <section className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10 sm:p-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -194,7 +194,7 @@ export default function EventDetailPage() {
                     <Badge tone="soon">Publico</Badge>
                   </div>
                   <h2 className="mt-3 text-xl font-semibold">Link publico</h2>
-                  <p className="mt-2 break-all text-sm text-zinc-400">
+                  <p className="mt-2 break-all text-sm text-[#6F7668]">
                     {event.slug ? getAbsolutePublicEventUrl(event.slug) : "Configura un slug para compartir."}
                   </p>
                 </div>
@@ -204,7 +204,7 @@ export default function EventDetailPage() {
                   ) : null}
                   <Link
                     href={`/events/${event.id}/public-guests`}
-                    className="flex min-h-11 items-center justify-center rounded-lg border border-white/10 px-4 text-sm font-semibold text-zinc-100 transition hover:bg-white/5"
+                    className="flex min-h-11 items-center justify-center rounded-lg border border-[#18251A]/10 px-4 text-sm font-semibold text-[#18251A] transition hover:bg-[#F0EADF]"
                   >
                     Solicitudes publicas
                   </Link>
@@ -213,25 +213,31 @@ export default function EventDetailPage() {
             </section>
 
             <section className="grid gap-3 md:grid-cols-3">
-              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
-                <p className="text-sm text-zinc-500">Inicio</p>
-                <p className="mt-2 font-semibold text-zinc-100">
+              <div className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4">
+                <p className="text-sm text-[#7F836F]">Inicio</p>
+                <p className="mt-2 font-semibold text-[#18251A]">
                   {formatDateTime(event.starts_at)}
                 </p>
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
-                <p className="text-sm text-zinc-500">Fin</p>
-                <p className="mt-2 font-semibold text-zinc-100">
+              <div className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4">
+                <p className="text-sm text-[#7F836F]">Fin</p>
+                <p className="mt-2 font-semibold text-[#18251A]">
                   {formatDateTime(event.ends_at)}
                 </p>
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
-                <p className="text-sm text-zinc-500">Descripcion</p>
-                <p className="mt-2 line-clamp-3 text-zinc-100">
+              <div className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4">
+                <p className="text-sm text-[#7F836F]">Descripcion</p>
+                <p className="mt-2 line-clamp-3 text-[#18251A]">
                   {event.description || "Sin descripcion"}
                 </p>
               </div>
             </section>
+
+            <LocationCard
+              name={event.location_name || event.location}
+              address={event.location_address}
+              mapsUrl={event.location_maps_url}
+            />
 
             <EventModuleGrid eventId={event.id} />
           </>

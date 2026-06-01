@@ -8,17 +8,17 @@ type BadgeProps = {
 };
 
 const toneClasses: Record<BadgeTone, string> = {
-  neutral: "border-zinc-500/30 bg-zinc-500/10 text-zinc-200",
-  success: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
-  warning: "border-amber-400/30 bg-amber-400/10 text-amber-200",
-  danger: "border-red-400/30 bg-red-400/10 text-red-200",
-  soon: "border-white/10 bg-white/5 text-zinc-400",
+  neutral: "border-[#18251A]/10 bg-[#FFFDF8] text-[#42503E]",
+  success: "border-[#315C38]/15 bg-[#DCE5D2] text-[#294F2F]",
+  warning: "border-[#F2C66D]/30 bg-[#F8E8BF] text-[#8A5B00]",
+  danger: "border-[#F36F4A]/25 bg-[#FFE0D6] text-[#B33F22]",
+  soon: "border-[#18251A]/10 bg-[#F0EADF] text-[#6F7668]",
 };
 
 export function Badge({ children, tone = "neutral" }: BadgeProps) {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${toneClasses[tone]}`}
+      className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-wide ${toneClasses[tone]}`}
     >
       {children}
     </span>

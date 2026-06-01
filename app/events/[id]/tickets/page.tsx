@@ -145,19 +145,19 @@ export default function EventTicketsPage() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <EventContextNav eventId={params.id} />
 
-        <header className="flex flex-col gap-4 rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <header className="flex flex-col gap-4 rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div>
-            <Link href={`/events/${params.id}`} className="text-sm font-semibold text-emerald-300">
+            <Link href={`/events/${params.id}`} className="text-sm font-semibold text-[#315C38]">
               Volver al evento
             </Link>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight">Entradas QR</h1>
-            <p className="mt-2 text-sm text-zinc-400">Un QR por entrada individual.</p>
+            <p className="mt-2 text-sm text-[#6F7668]">Un QR por entrada individual.</p>
           </div>
           <button
             type="button"
             onClick={generateTickets}
             disabled={isGenerating || guests.length === 0}
-            className="min-h-12 w-full rounded-lg bg-emerald-400 px-5 text-base font-semibold text-zinc-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+            className="min-h-12 w-full rounded-lg bg-[#315C38] px-5 text-base font-semibold text-[#FFFDF8] transition hover:bg-[#294F2F] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           >
             {isGenerating ? "Generando..." : "Generar faltantes"}
           </button>
@@ -170,24 +170,24 @@ export default function EventTicketsPage() {
         ) : null}
 
         <section className="grid gap-4 sm:grid-cols-3">
-          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
-            <p className="text-sm text-zinc-500">Invitados</p>
+          <div className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4">
+            <p className="text-sm text-[#7F836F]">Invitados</p>
             <p className="mt-2 text-3xl font-semibold">{guests.length}</p>
           </div>
-          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
-            <p className="text-sm text-zinc-500">Entradas requeridas</p>
+          <div className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4">
+            <p className="text-sm text-[#7F836F]">Entradas requeridas</p>
             <p className="mt-2 text-3xl font-semibold">
               {guests.reduce((sum, guest) => sum + guest.ticket_quantity, 0)}
             </p>
           </div>
-          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
-            <p className="text-sm text-zinc-500">Tickets creados</p>
+          <div className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4">
+            <p className="text-sm text-[#7F836F]">Tickets creados</p>
             <p className="mt-2 text-3xl font-semibold">{tickets.length}</p>
           </div>
         </section>
 
         {isLoading ? (
-          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-zinc-300">
+          <div className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-5 text-[#42503E]">
             Cargando entradas...
           </div>
         ) : tickets.length === 0 ? (
@@ -201,14 +201,14 @@ export default function EventTicketsPage() {
               <Link
                 key={ticket.id}
                 href={`/events/${params.id}/tickets/${ticket.id}`}
-                className="rounded-xl border border-white/10 bg-white/[0.04] p-4 transition hover:border-emerald-400/40 hover:bg-white/[0.06]"
+                className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 transition hover:border-[#315C38]/30 hover:bg-[#FFFDF8]"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h2 className="text-lg font-semibold">
                       {ticket.guests?.name || "Sin invitado"}
                     </h2>
-                    <p className="mt-2 break-all text-xs text-zinc-500">{ticket.token}</p>
+                    <p className="mt-2 break-all text-xs text-[#7F836F]">{ticket.token}</p>
                   </div>
                   <Badge tone={ticketTone[ticket.status]}>
                     {ticketStatusLabels[ticket.status]}

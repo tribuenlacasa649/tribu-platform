@@ -42,12 +42,12 @@ export default function EditGuestPage() {
         <header className="space-y-3">
           <Link
             href={`/events/${params.id}/guests/${params.guestId}`}
-            className="text-sm font-semibold text-emerald-300"
+            className="text-sm font-semibold text-[#315C38]"
           >
             Volver al invitado
           </Link>
           <div>
-            <p className="text-sm font-medium text-zinc-400">Editar invitado</p>
+            <p className="text-sm font-medium text-[#6F7668]">Editar invitado</p>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight">
               Datos del invitado
             </h1>
@@ -61,7 +61,7 @@ export default function EditGuestPage() {
         ) : null}
 
         {isLoading ? (
-          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-zinc-300">
+          <div className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-5 text-[#42503E]">
             Cargando invitado...
           </div>
         ) : guest ? (

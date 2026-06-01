@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../../components/AppShell";
 import { Badge, eventStatusTone } from "../../components/Badge";
 import { EmptyState } from "../../components/EmptyState";
+import { EventOverview } from "../../components/EventOverview";
 import { StatCard } from "../../components/StatCard";
 import { createSupabaseBrowserClient } from "../../lib/supabase";
 import type { EventRecord } from "../../types/database";
@@ -42,7 +43,7 @@ export default function DashboardPage() {
           supabase.from("ticket_scans").select("id", { count: "exact", head: true }),
           supabase
             .from("events")
-            .select("id, name, description, location, starts_at, ends_at, status, created_at")
+            .select("id, name, description, location, location_name, location_address, location_maps_url, event_banner_url, starts_at, ends_at, status, created_at")
             .order("created_at", { ascending: false })
             .limit(5),
         ]);
@@ -68,15 +69,11 @@ export default function DashboardPage() {
 
   return (
     <AppShell title="Dashboard">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <header className="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:p-6">
-          <p className="text-sm font-medium text-emerald-300">Operacion interna</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-            Dashboard
-          </h1>
-          <p className="mt-2 text-sm text-zinc-400">
-            Vista rapida para eventos, invitados y modulos proximos.
-          </p>
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+        <header className="rounded-[1.5rem] border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10">
+          <p className="text-sm font-medium text-[#315C38]">Operacion interna</p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight">Dashboard</h1>
+          <p className="mt-1 text-sm text-[#6F7668]">Vista compacta para operar desde celular.</p>
         </header>
 
         {error ? (
@@ -92,37 +89,43 @@ export default function DashboardPage() {
           <StatCard label="Scanner OK" value={stats.checkins} helper="Preparado" />
         </section>
 
-        <section className="grid gap-4 md:grid-cols-3">
+        {events[0] ? (
+          <EventOverview
+            eventId={events[0].id}
+            stats={{
+              guests: stats.totalGuests,
+              tickets: stats.tickets,
+              usedTickets: stats.checkins,
+              confirmedPayments: 0,
+            }}
+          />
+        ) : null}
+
+        <section className="grid gap-3 md:grid-cols-2">
           <Link
             href="/events/new"
-            className="flex min-h-14 items-center justify-center rounded-xl bg-emerald-400 px-5 text-base font-semibold text-zinc-950 transition hover:bg-emerald-300"
+            className="flex min-h-14 items-center justify-center rounded-xl bg-[#315C38] px-5 text-base font-semibold text-[#FFFDF8] transition hover:bg-[#294F2F]"
           >
             Crear evento
           </Link>
           <Link
             href="/events"
-            className="flex min-h-14 items-center justify-center rounded-xl border border-white/10 px-5 text-base font-semibold text-zinc-100 transition hover:bg-white/5"
+            className="flex min-h-14 items-center justify-center rounded-xl border border-[#18251A]/10 px-5 text-base font-semibold text-[#18251A] transition hover:bg-[#F0EADF]"
           >
             Ver eventos
-          </Link>
-          <Link
-            href="/events"
-            className="flex min-h-14 items-center justify-center rounded-xl border border-white/10 px-5 text-base font-semibold text-zinc-100 transition hover:bg-white/5"
-          >
-            Crear invitado
           </Link>
         </section>
 
         <section className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-xl font-semibold">Eventos recientes</h2>
-            <Link href="/events" className="text-sm font-semibold text-emerald-300">
+            <Link href="/events" className="text-sm font-semibold text-[#315C38]">
               Ver todos
             </Link>
           </div>
 
           {isLoading ? (
-            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-zinc-300">
+            <div className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-5 text-[#42503E]">
               Cargando dashboard...
             </div>
           ) : events.length === 0 ? (
@@ -138,12 +141,16 @@ export default function DashboardPage() {
                 <Link
                   key={event.id}
                   href={`/events/${event.id}`}
-                  className="rounded-xl border border-white/10 bg-white/[0.04] p-4 transition hover:border-emerald-400/40 hover:bg-white/[0.06]"
+                  className="overflow-hidden rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] transition hover:border-[#315C38]/30 hover:bg-[#FFFDF8]"
                 >
-                  <div className="flex items-start justify-between gap-3">
+                  {event.event_banner_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={event.event_banner_url} alt={event.name} className="h-28 w-full object-cover" />
+                  ) : null}
+                  <div className="flex items-start justify-between gap-3 p-4">
                     <div>
                       <h3 className="text-lg font-semibold">{event.name}</h3>
-                      <p className="mt-2 text-sm text-zinc-400">
+                      <p className="mt-2 text-sm text-[#6F7668]">
                         {event.location || "Sin ubicacion"}
                       </p>
                     </div>

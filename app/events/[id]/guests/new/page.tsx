@@ -14,12 +14,12 @@ export default function NewGuestPage() {
         <header className="space-y-3">
           <Link
             href={`/events/${params.id}/guests`}
-            className="text-sm font-semibold text-emerald-300"
+            className="text-sm font-semibold text-[#315C38]"
           >
             Volver a invitados
           </Link>
           <div>
-            <p className="text-sm font-medium text-zinc-400">Nuevo invitado</p>
+            <p className="text-sm font-medium text-[#6F7668]">Nuevo invitado</p>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight">
               Crear invitado
             </h1>

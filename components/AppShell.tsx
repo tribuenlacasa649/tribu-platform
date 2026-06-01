@@ -15,38 +15,52 @@ type AppShellProps = {
   requireAuth?: boolean;
 };
 
-function getNavigation(eventId: string | null) {
+type NavItem = {
+  href: string;
+  label: string;
+  short: string;
+  active: boolean;
+};
+
+function getNavigation(eventId: string | null): NavItem[] {
   return [
-    { href: "/dashboard", label: "Dashboard", active: true },
-    { href: "/events", label: "Eventos", active: true },
+    { href: "/dashboard", label: "Inicio", short: "Inicio", active: true },
     {
       href: eventId ? getEventRoute(eventId, "guests") : "/events",
       label: "Invitados",
-      active: true,
-    },
-    {
-      href: eventId ? getEventRoute(eventId, "tickets") : "/events",
-      label: "Entradas",
+      short: "Lista",
       active: true,
     },
     {
       href: eventId ? getEventRoute(eventId, "checkin") : "/events",
       label: "Scanner QR",
+      short: "Scan",
       active: true,
     },
     {
-      href: eventId ? getEventRoute(eventId, "payments") : "/events",
-      label: "Pagos",
+      href: eventId ? getEventRoute(eventId, "tickets") : "/events",
+      label: "Entradas",
+      short: "Tickets",
       active: true,
     },
-    { href: "#", label: "Produccion", active: false },
-    { href: "#", label: "Stock", active: false },
     {
       href: eventId ? getEventRoute(eventId, "reports") : "/events",
       label: "Reportes",
+      short: "Stats",
+      active: true,
+    },
+    { href: "/events", label: "Eventos", short: "Eventos", active: true },
+    {
+      href: eventId ? getEventRoute(eventId, "payments") : "/events",
+      label: "Pagos",
+      short: "Pagos",
       active: true,
     },
   ];
+}
+
+function isActive(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 export function AppShell({
@@ -131,8 +145,8 @@ export function AppShell({
 
   if (isCheckingSession) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-zinc-950 px-4 text-white">
-        <div className="rounded-xl border border-white/10 bg-white/[0.04] px-5 py-4 text-sm text-zinc-300">
+      <main className="flex min-h-screen items-center justify-center bg-[#F6F1E8] px-4 text-[#18251A]">
+        <div className="tribu-card rounded-[1.5rem] px-5 py-4 text-sm font-semibold">
           Cargando sesion...
         </div>
       </main>
@@ -140,49 +154,46 @@ export function AppShell({
   }
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-white">
+    <main className="min-h-screen bg-[#F6F1E8] text-[#18251A]">
       <div className="mx-auto flex min-h-screen w-full max-w-7xl">
-        <aside className="hidden w-64 shrink-0 border-r border-white/10 bg-zinc-950/95 px-4 py-5 lg:block">
-          <Link href="/dashboard" className="block rounded-xl bg-white/[0.04] p-4">
-            <p className="text-sm font-medium text-emerald-300">Tribu</p>
-            <p className="mt-1 text-xl font-semibold">Platform</p>
+        <aside className="hidden w-64 shrink-0 px-4 py-5 lg:block">
+          <Link href="/dashboard" className="tribu-card block rounded-[1.75rem] p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#315C38] text-sm font-black text-[#FFFDF8]">
+                QR
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-[#7F936A]">Tribu</p>
+                <p className="text-xl font-black text-[#294F2F]">Platform</p>
+              </div>
+            </div>
           </Link>
 
-          <nav className="mt-6 space-y-1">
-            {navigation.map((item) =>
-              item.active ? (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className={`block rounded-lg px-3 py-3 text-sm font-semibold transition ${
-                    pathname === item.href || pathname.startsWith(`${item.href}/`)
-                      ? "bg-emerald-400 text-zinc-950"
-                      : "text-zinc-300 hover:bg-white/5 hover:text-white"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              ) : (
-                <div
-                  key={item.label}
-                  className="flex items-center justify-between rounded-lg px-3 py-3 text-sm font-semibold text-zinc-600"
-                >
-                  {item.label}
-                  <span className="text-xs font-medium">Pronto</span>
-                </div>
-              )
-            )}
+          <nav className="mt-5 space-y-2">
+            {navigation.slice(0, 7).map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`flex min-h-12 items-center rounded-2xl px-4 text-sm font-bold transition ${
+                  isActive(pathname, item.href)
+                    ? "bg-[#315C38] text-[#FFFDF8] shadow-lg shadow-[#315C38]/20"
+                    : "text-[#42503E] hover:bg-[#FFFDF8]"
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
           </nav>
         </aside>
 
-        <section className="flex min-w-0 flex-1 flex-col pb-20 lg:pb-0">
-          <header className="sticky top-0 z-20 border-b border-white/10 bg-zinc-950/90 px-4 py-3 backdrop-blur sm:px-6">
+        <section className="flex min-w-0 flex-1 flex-col pb-24 lg:pb-0">
+          <header className="sticky top-0 z-20 bg-[#F6F1E8]/90 px-4 py-4 backdrop-blur sm:px-6 lg:px-8">
             <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-300">
+              <div className="min-w-0">
+                <p className="truncate text-xl font-black tracking-tight text-[#18251A]">
                   {title}
                 </p>
-                <p className="text-sm text-zinc-400">
+                <p className="truncate text-xs font-semibold text-[#6F7668]">
                   {getUserDisplayName(user)}
                   {role ? ` · ${internalRoleLabels[role]}` : ""}
                 </p>
@@ -190,41 +201,38 @@ export function AppShell({
               <button
                 type="button"
                 onClick={handleLogout}
-                className="min-h-10 rounded-lg border border-white/10 px-4 text-sm font-semibold text-zinc-100 transition hover:bg-white/5"
+                className="min-h-11 rounded-2xl bg-[#FFFDF8] px-4 text-sm font-bold text-[#294F2F] shadow-sm ring-1 ring-[#18251A]/10 transition hover:bg-[#DCE5D2]"
               >
                 Salir
               </button>
             </div>
           </header>
 
-          <div className="w-full px-4 py-5 sm:px-6 lg:px-8">{children}</div>
+          <div className="w-full px-4 pb-6 pt-1 sm:px-6 lg:px-8">{children}</div>
         </section>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-zinc-950/95 px-3 py-2 backdrop-blur lg:hidden">
-        <div className="mx-auto grid max-w-md grid-cols-4 gap-2">
-          {navigation.slice(0, 4).map((item) =>
-            item.active ? (
+      <nav className="fixed inset-x-3 bottom-3 z-30 rounded-[2rem] border border-[#18251A]/10 bg-[#FFFDF8]/92 p-2 shadow-2xl shadow-[#294F2F]/20 backdrop-blur lg:hidden">
+        <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
+          {navigation.slice(0, 5).map((item, index) => {
+            const active = isActive(pathname, item.href);
+            return (
               <Link
                 key={item.label}
                 href={item.href}
-                className={`rounded-lg px-2 py-2 text-center text-xs font-semibold ${
-                  pathname === item.href || pathname.startsWith(`${item.href}/`)
-                    ? "bg-emerald-400 text-zinc-950"
-                    : "text-zinc-400"
+                className={`flex min-h-14 flex-col items-center justify-center rounded-[1.4rem] text-[11px] font-black transition ${
+                  active
+                    ? "bg-[#315C38] text-[#FFFDF8]"
+                    : index === 2
+                      ? "bg-[#DCE5D2] text-[#294F2F]"
+                      : "text-[#66705F]"
                 }`}
               >
-                {item.label}
+                <span className="text-base leading-none">{index === 2 ? "QR" : "•"}</span>
+                <span>{item.short}</span>
               </Link>
-            ) : (
-              <div
-                key={item.label}
-                className="rounded-lg px-2 py-2 text-center text-xs font-semibold text-zinc-600"
-              >
-                {item.label}
-              </div>
-            )
-          )}
+            );
+          })}
         </div>
       </nav>
     </main>

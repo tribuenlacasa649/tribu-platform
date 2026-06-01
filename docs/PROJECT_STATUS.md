@@ -16,6 +16,9 @@
 - Registro publico crea `public_guest` y `guest` interno inmediatamente.
 - Confirmacion manual de pago con generacion automatica de tickets.
 - Fallback gratuito de WhatsApp con `wa.me`.
+- Banner visual por evento desde Supabase Storage `event-banners`.
+- Ubicacion enriquecida con nombre, direccion y link de Google Maps.
+- Selector de pais para WhatsApp en registro publico.
 
 ## Rutas principales
 
@@ -56,6 +59,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 
 - Crear evento.
 - Configurar slug y publicarlo.
+- Cargar direccion, link Google Maps y banner.
 - Probar `/p/events/[slug]`.
 - Registrar una solicitud publica.
 - Avisar pago con referencia y/o imagen.
@@ -63,6 +67,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 - Ver QR en portal publico.
 - Probar Scanner QR manual con token.
 - Probar scanner en celular con HTTPS.
+- Probar que cada compra de 2+ entradas genere QR individuales.
 
 ## Pendientes recomendados
 
@@ -70,3 +75,4 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 - Pasar confirmacion de pago a API route/server action con permisos de admin.
 - Integrar WhatsApp Cloud API si se decide automatizar de verdad.
 - Agregar storage privado con signed URLs si se necesita mayor privacidad para comprobantes.
+- Migrar banners a imagenes optimizadas si el trafico publico crece.

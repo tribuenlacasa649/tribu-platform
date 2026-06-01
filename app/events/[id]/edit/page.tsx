@@ -19,7 +19,7 @@ export default function EditEventPage() {
     async function loadEvent() {
       const { data, error: requestError } = await supabase
         .from("events")
-        .select("id, name, description, location, starts_at, ends_at, status, slug, is_public, public_title, public_description, ticket_price, public_status, created_at")
+        .select("id, name, description, location, location_name, location_address, location_maps_url, event_banner_url, starts_at, ends_at, status, slug, is_public, public_title, public_description, ticket_price, public_status, created_at")
         .eq("id", params.id)
         .single();
 
@@ -39,11 +39,11 @@ export default function EditEventPage() {
     <AppShell title="Editar evento">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <header className="space-y-3">
-          <Link href={`/events/${params.id}`} className="text-sm font-semibold text-emerald-300">
+          <Link href={`/events/${params.id}`} className="text-sm font-semibold text-[#315C38]">
             Volver al evento
           </Link>
           <div>
-            <p className="text-sm font-medium text-zinc-400">Editar evento</p>
+            <p className="text-sm font-medium text-[#6F7668]">Editar evento</p>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight">
               Datos del evento
             </h1>
@@ -57,7 +57,7 @@ export default function EditEventPage() {
         ) : null}
 
         {isLoading ? (
-          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-zinc-300">
+          <div className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-5 text-[#42503E]">
             Cargando evento...
           </div>
         ) : event ? (

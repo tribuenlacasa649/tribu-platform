@@ -64,7 +64,7 @@ export function DeleteGuestButton({
         disabled={isDeleting}
         className={
           className ||
-          "min-h-12 rounded-lg bg-red-500 px-5 text-base font-semibold text-white transition hover:bg-red-400 disabled:opacity-60"
+          "min-h-12 rounded-lg bg-red-500 px-5 text-base font-semibold text-[#18251A] transition hover:bg-red-400 disabled:opacity-60"
         }
       >
         {isDeleting ? "Eliminando..." : "Eliminar"}

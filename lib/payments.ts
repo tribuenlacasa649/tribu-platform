@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createTicketToken } from "./tickets";
+import { formatPhone } from "./phone";
 import type { EventRecord, PublicGuestRecord } from "../types/database";
 
 export function getSuggestedPaymentAmount(
@@ -35,7 +36,7 @@ export async function confirmPublicGuestPayment(
       .insert({
         event_id: publicGuest.event_id,
         name: publicGuest.full_name,
-        contact: publicGuest.phone,
+        contact: formatPhone(publicGuest.country_code, publicGuest.phone),
         food_preferences: publicGuest.food_preferences,
         ticket_quantity: publicGuest.ticket_quantity,
         notes: publicGuest.notes,

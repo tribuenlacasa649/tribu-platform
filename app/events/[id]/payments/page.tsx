@@ -18,6 +18,7 @@ import {
 import { createSupabaseBrowserClient } from "../../../../lib/supabase";
 import { getPublicTicketUrl } from "../../../../lib/tickets";
 import { createTicketWhatsAppMessage, createWhatsAppUrl } from "../../../../lib/whatsapp";
+import { formatPhone } from "../../../../lib/phone";
 import type { EventRecord, PaymentStatus, PublicGuestRecord, TicketRecord } from "../../../../types/database";
 
 const paymentLabels: Record<PaymentStatus, string> = {
@@ -99,12 +100,12 @@ export default function PaymentsPage() {
     const [eventResult, requestsResult] = await Promise.all([
       supabase
         .from("events")
-        .select("id, name, description, location, starts_at, ends_at, status, slug, is_public, public_title, public_description, ticket_price, public_status, created_at")
+        .select("id, name, description, location, location_name, location_address, location_maps_url, event_banner_url, starts_at, ends_at, status, slug, is_public, public_title, public_description, ticket_price, public_status, created_at")
         .eq("id", params.id)
         .single(),
       supabase
         .from("public_guests")
-        .select("id, event_id, full_name, phone, instagram, ticket_quantity, food_preferences, notes, status, payment_status, access_token, payment_reference, payment_proof, payment_proof_file_url, payment_notified_at, payment_confirmed_at, internal_guest_id, created_at")
+        .select("id, event_id, full_name, phone, country_code, instagram, ticket_quantity, food_preferences, notes, status, payment_status, access_token, payment_reference, payment_proof, payment_proof_file_url, payment_notified_at, payment_confirmed_at, internal_guest_id, created_at")
         .eq("event_id", params.id)
         .order("created_at", { ascending: false }),
     ]);
@@ -131,12 +132,12 @@ export default function PaymentsPage() {
       const [eventResult, requestsResult] = await Promise.all([
         supabase
           .from("events")
-          .select("id, name, description, location, starts_at, ends_at, status, slug, is_public, public_title, public_description, ticket_price, public_status, created_at")
+          .select("id, name, description, location, location_name, location_address, location_maps_url, event_banner_url, starts_at, ends_at, status, slug, is_public, public_title, public_description, ticket_price, public_status, created_at")
           .eq("id", params.id)
           .single(),
         supabase
           .from("public_guests")
-          .select("id, event_id, full_name, phone, instagram, ticket_quantity, food_preferences, notes, status, payment_status, access_token, payment_reference, payment_proof, payment_proof_file_url, payment_notified_at, payment_confirmed_at, internal_guest_id, created_at")
+          .select("id, event_id, full_name, phone, country_code, instagram, ticket_quantity, food_preferences, notes, status, payment_status, access_token, payment_reference, payment_proof, payment_proof_file_url, payment_notified_at, payment_confirmed_at, internal_guest_id, created_at")
           .eq("event_id", params.id)
           .order("created_at", { ascending: false }),
       ]);
@@ -232,13 +233,13 @@ export default function PaymentsPage() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
         <EventContextNav eventId={params.id} />
 
-        <header className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:flex-row sm:items-center sm:justify-between">
+        <header className="flex flex-col gap-3 rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <Link href={`/events/${params.id}`} className="text-sm font-semibold text-emerald-300">
+            <Link href={`/events/${params.id}`} className="text-sm font-semibold text-[#315C38]">
               Evento / Pagos
             </Link>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight">Pagos y QR</h1>
-            <p className="mt-1 text-sm text-zinc-400">Confirmá, generá QR y enviá WhatsApp.</p>
+            <p className="mt-1 text-sm text-[#6F7668]">Confirmá, generá QR y enviá WhatsApp.</p>
           </div>
         </header>
 
@@ -250,15 +251,15 @@ export default function PaymentsPage() {
 
         <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           {(["pending", "notified", "confirmed", "rejected"] as PaymentStatus[]).map((status) => (
-            <div key={status} className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
-              <p className="text-sm text-zinc-500">{paymentLabels[status]}</p>
+            <div key={status} className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4">
+              <p className="text-sm text-[#7F836F]">{paymentLabels[status]}</p>
               <p className="mt-2 text-3xl font-semibold">{counts[status]}</p>
             </div>
           ))}
         </section>
 
         {isLoading ? (
-          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-zinc-300">
+          <div className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-5 text-[#42503E]">
             Cargando pagos...
           </div>
         ) : requests.length === 0 ? (
@@ -275,18 +276,18 @@ export default function PaymentsPage() {
                 location: event?.location,
               });
               const whatsappUrl = ticketUrls.length
-                ? createWhatsAppUrl(request.phone, whatsappMessage)
+                ? createWhatsAppUrl(formatPhone(request.country_code, request.phone), whatsappMessage)
                 : "";
 
               return (
                 <article
                   key={request.id}
-                  className="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20"
+                  className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <h2 className="text-lg font-semibold">{request.full_name}</h2>
-                      <p className="mt-1 text-sm text-zinc-400">{request.phone}</p>
+                      <p className="mt-1 text-sm text-[#6F7668]">{request.phone}</p>
                     </div>
                     <Badge tone={paymentTone[request.payment_status]}>
                       {paymentLabels[request.payment_status]}
@@ -294,20 +295,20 @@ export default function PaymentsPage() {
                   </div>
 
                   <div className="mt-4 grid gap-2 text-sm">
-                    <div className="rounded-lg bg-zinc-950/70 p-3">
-                      <p className="text-zinc-500">Entradas / monto</p>
+                    <div className="rounded-lg bg-[#F6F1E8]/70 p-3">
+                      <p className="text-[#7F836F]">Entradas / monto</p>
                       <p className="mt-1 font-semibold">
                         {request.ticket_quantity} · {formatMoney(amount)}
                       </p>
                     </div>
-                    <div className="rounded-lg bg-zinc-950/70 p-3">
-                      <p className="text-zinc-500">Referencia</p>
+                    <div className="rounded-lg bg-[#F6F1E8]/70 p-3">
+                      <p className="text-[#7F836F]">Referencia</p>
                       <p className="mt-1 break-words font-semibold">
                         {request.payment_reference || "Sin referencia"}
                       </p>
                     </div>
-                    <div className="rounded-lg bg-zinc-950/70 p-3">
-                      <p className="text-zinc-500">Comprobante</p>
+                    <div className="rounded-lg bg-[#F6F1E8]/70 p-3">
+                      <p className="text-[#7F836F]">Comprobante</p>
                       <p className="mt-1 break-words font-semibold">
                         {request.payment_proof || "Sin texto"}
                       </p>
@@ -316,7 +317,7 @@ export default function PaymentsPage() {
                           href={request.payment_proof_file_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="mt-2 inline-block font-semibold text-emerald-300"
+                          className="mt-2 inline-block font-semibold text-[#315C38]"
                         >
                           Ver imagen
                         </a>
@@ -330,7 +331,7 @@ export default function PaymentsPage() {
                         type="button"
                         onClick={() => confirmPayment(request)}
                         disabled={activeId === request.id}
-                        className="min-h-11 rounded-lg bg-emerald-400 px-4 text-sm font-semibold text-zinc-950 transition disabled:opacity-60"
+                        className="min-h-11 rounded-lg bg-[#315C38] px-4 text-sm font-semibold text-[#FFFDF8] transition disabled:opacity-60"
                       >
                         {activeId === request.id ? "Procesando..." : "Confirmar y generar QR"}
                       </button>
@@ -340,7 +341,7 @@ export default function PaymentsPage() {
                         type="button"
                         onClick={() => setPaymentStatus(request, "pending")}
                         disabled={activeId === request.id}
-                        className="min-h-11 rounded-lg border border-white/10 px-3 text-sm font-semibold text-zinc-100"
+                        className="min-h-11 rounded-lg border border-[#18251A]/10 px-3 text-sm font-semibold text-[#18251A]"
                       >
                         Pendiente
                       </button>
@@ -348,19 +349,19 @@ export default function PaymentsPage() {
                         type="button"
                         onClick={() => setPaymentStatus(request, "rejected")}
                         disabled={activeId === request.id}
-                        className="min-h-11 rounded-lg bg-red-500 px-3 text-sm font-semibold text-white"
+                        className="min-h-11 rounded-lg bg-red-500 px-3 text-sm font-semibold text-[#18251A]"
                       >
                         Rechazar
                       </button>
                     </div>
 
                     {ticketUrls.length ? (
-                      <div className="grid gap-2 rounded-lg border border-white/10 p-3">
+                      <div className="grid gap-2 rounded-lg border border-[#18251A]/10 p-3">
                         <a
                           href={whatsappUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="flex min-h-11 items-center justify-center rounded-lg bg-emerald-500 px-3 text-sm font-semibold text-zinc-950"
+                          className="flex min-h-11 items-center justify-center rounded-lg bg-[#315C38] px-3 text-sm font-semibold text-[#FFFDF8]"
                         >
                           Enviar QR por WhatsApp
                         </a>

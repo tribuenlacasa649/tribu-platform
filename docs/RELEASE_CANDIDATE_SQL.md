@@ -1,6 +1,6 @@
 # Release Candidate SQL
 
-Aplicar este bloque completo en Supabase SQL Editor antes de probar el flujo publico. No usa `create policy if not exists`, porque Postgres no lo soporta.
+Aplicar este bloque completo en Supabase SQL Editor. No usa `create policy if not exists`, porque Postgres no lo soporta.
 
 ```sql
 create extension if not exists pgcrypto;
@@ -11,13 +11,18 @@ add column if not exists is_public boolean default false,
 add column if not exists public_title text,
 add column if not exists public_description text,
 add column if not exists ticket_price numeric default 0,
-add column if not exists public_status text default 'draft';
+add column if not exists public_status text default 'draft',
+add column if not exists location_name text,
+add column if not exists location_address text,
+add column if not exists location_maps_url text,
+add column if not exists event_banner_url text;
 
 alter table public.guests
 add column if not exists ticket_quantity integer default 1,
 add column if not exists notes text;
 
 alter table public.public_guests
+add column if not exists country_code text default '+54',
 add column if not exists instagram text,
 add column if not exists ticket_quantity integer default 1,
 add column if not exists food_preferences text,
@@ -61,9 +66,15 @@ insert into storage.buckets (id, name, public)
 values ('payment-proofs', 'payment-proofs', true)
 on conflict (id) do update set public = true;
 
+insert into storage.buckets (id, name, public)
+values ('event-banners', 'event-banners', true)
+on conflict (id) do update set public = true;
+
 drop policy if exists "anon upload payment proofs" on storage.objects;
 drop policy if exists "authenticated read payment proofs" on storage.objects;
 drop policy if exists "authenticated manage payment proofs" on storage.objects;
+drop policy if exists "authenticated manage event banners" on storage.objects;
+drop policy if exists "public read event banners" on storage.objects;
 
 create policy "anon upload payment proofs"
 on storage.objects
@@ -87,18 +98,34 @@ to authenticated
 using (bucket_id = 'payment-proofs')
 with check (bucket_id = 'payment-proofs');
 
+create policy "public read event banners"
+on storage.objects
+for select
+to anon, authenticated
+using (bucket_id = 'event-banners');
+
+create policy "authenticated manage event banners"
+on storage.objects
+for all
+to authenticated
+using (bucket_id = 'event-banners')
+with check (bucket_id = 'event-banners');
+
 drop function if exists public.create_public_guest_registration(
   uuid, text, text, text, integer, text, text, text
+);
+drop function if exists public.create_public_guest_registration(
+  uuid, text, text, text, text, integer, text, text
 );
 
 create or replace function public.create_public_guest_registration(
   new_event_id uuid,
   new_full_name text,
+  new_country_code text,
   new_phone text,
   new_instagram text,
   new_ticket_quantity integer,
   new_food_preferences text,
-  new_notes text,
   new_access_token text
 )
 returns text
@@ -108,10 +135,11 @@ set search_path = public
 as $$
 declare
   created_guest_id uuid;
-  created_public_guest_id uuid;
   safe_quantity integer := greatest(1, coalesce(new_ticket_quantity, 1));
+  safe_country_code text := coalesce(nullif(trim(new_country_code), ''), '+54');
+  safe_phone text := regexp_replace(coalesce(new_phone, ''), '\D', '', 'g');
 begin
-  if nullif(trim(new_full_name), '') is null or nullif(trim(new_phone), '') is null then
+  if nullif(trim(new_full_name), '') is null or safe_phone = '' then
     raise exception 'Nombre y WhatsApp son obligatorios.';
   end if;
 
@@ -121,16 +149,14 @@ begin
     contact,
     food_preferences,
     ticket_quantity,
-    notes,
     status
   )
   values (
     new_event_id,
     trim(new_full_name),
-    trim(new_phone),
+    safe_country_code || safe_phone,
     nullif(trim(coalesce(new_food_preferences, '')), ''),
     safe_quantity,
-    nullif(trim(coalesce(new_notes, '')), ''),
     'active'
   )
   returning id into created_guest_id;
@@ -138,11 +164,11 @@ begin
   insert into public.public_guests (
     event_id,
     full_name,
+    country_code,
     phone,
     instagram,
     ticket_quantity,
     food_preferences,
-    notes,
     status,
     payment_status,
     access_token,
@@ -151,24 +177,23 @@ begin
   values (
     new_event_id,
     trim(new_full_name),
-    trim(new_phone),
+    safe_country_code,
+    safe_phone,
     nullif(trim(coalesce(new_instagram, '')), ''),
     safe_quantity,
     nullif(trim(coalesce(new_food_preferences, '')), ''),
-    nullif(trim(coalesce(new_notes, '')), ''),
     'pending',
     'pending',
     new_access_token,
     created_guest_id
-  )
-  returning id into created_public_guest_id;
+  );
 
   return new_access_token;
 end;
 $$;
 
 grant execute on function public.create_public_guest_registration(
-  uuid, text, text, text, integer, text, text, text
+  uuid, text, text, text, text, integer, text, text
 ) to anon, authenticated;
 
 drop function if exists public.notify_public_guest_payment(text, text, text);
@@ -209,6 +234,7 @@ returns table (
   event_id uuid,
   full_name text,
   phone text,
+  country_code text,
   instagram text,
   ticket_quantity integer,
   food_preferences text,
@@ -226,6 +252,10 @@ returns table (
   event_name text,
   event_public_title text,
   event_location text,
+  event_location_name text,
+  event_location_address text,
+  event_location_maps_url text,
+  event_banner_url text,
   event_starts_at timestamptz,
   event_ticket_price numeric
 )
@@ -234,13 +264,14 @@ security definer
 set search_path = public
 as $$
   select
-    pg.id, pg.event_id, pg.full_name, pg.phone, pg.instagram,
+    pg.id, pg.event_id, pg.full_name, pg.phone, pg.country_code, pg.instagram,
     pg.ticket_quantity, pg.food_preferences, pg.notes,
     pg.status, pg.payment_status, pg.access_token,
     pg.payment_reference, pg.payment_proof, pg.payment_proof_file_url,
     pg.payment_notified_at, pg.payment_confirmed_at,
     pg.internal_guest_id, pg.created_at,
-    e.name, e.public_title, e.location, e.starts_at, e.ticket_price
+    e.name, e.public_title, e.location, e.location_name, e.location_address,
+    e.location_maps_url, e.event_banner_url, e.starts_at, e.ticket_price
   from public.public_guests pg
   join public.events e on e.id = pg.event_id
   where pg.access_token = lookup_token
@@ -274,6 +305,6 @@ grant execute on function public.get_public_tickets_by_guest_token(text) to anon
 ```
 
 Notas:
-- El error de `ON CONFLICT` se corrige con el índice `payments_public_guest_id_unique`. El código además dejó de depender de `upsert`, para evitar que ese error vuelva a bloquear producción.
-- El bucket `payment-proofs` queda publico para que el admin pueda abrir links de imagen. Las rutas son difíciles de adivinar porque usan el `access_token`; anon puede subir, pero no tiene policy para listar objetos por API.
-- Para producción real con datos sensibles, conviene pasar comprobantes a bucket privado y servirlos con signed URLs desde backend.
+- `notes` se conserva en base de datos para no romper datos existentes, pero ya no se muestra en formularios publicos ni de invitados.
+- `event-banners` queda publico para renderizar banners en Vercel sin signed URLs.
+- Para produccion fuerte, mover comprobantes a bucket privado con signed URLs.

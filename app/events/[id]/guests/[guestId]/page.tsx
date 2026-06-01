@@ -44,17 +44,17 @@ export default function GuestDetailPage() {
         <header className="space-y-4">
           <Link
             href={`/events/${params.id}/guests`}
-            className="text-sm font-semibold text-emerald-300"
+            className="text-sm font-semibold text-[#315C38]"
           >
             Volver a invitados
           </Link>
 
           {isLoading ? (
-            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-zinc-300">
+            <div className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-5 text-[#42503E]">
               Cargando invitado...
             </div>
           ) : guest ? (
-            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:p-6">
+            <div className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10 sm:p-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <Badge tone={guestStatusTone(guest.status)}>
@@ -63,12 +63,12 @@ export default function GuestDetailPage() {
                   <h1 className="mt-3 text-3xl font-semibold tracking-tight">
                     {guest.name}
                   </h1>
-                  <p className="mt-2 text-zinc-400">{guest.contact || "Sin contacto"}</p>
+                  <p className="mt-2 text-[#6F7668]">{guest.contact || "Sin contacto"}</p>
                 </div>
                 <div className="grid gap-3 sm:min-w-48">
                   <Link
                     href={`/events/${params.id}/guests/${guest.id}/edit`}
-                    className="flex min-h-12 items-center justify-center rounded-lg border border-white/10 px-5 text-base font-semibold text-zinc-100 transition hover:bg-white/5"
+                    className="flex min-h-12 items-center justify-center rounded-lg border border-[#18251A]/10 px-5 text-base font-semibold text-[#18251A] transition hover:bg-[#F0EADF]"
                   >
                     Editar
                   </Link>
@@ -91,21 +91,15 @@ export default function GuestDetailPage() {
 
         {guest ? (
           <section className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
-              <p className="text-sm text-zinc-500">Preferencia gastronomica</p>
-              <p className="mt-2 font-semibold text-zinc-100">
+            <div className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4">
+              <p className="text-sm text-[#7F836F]">Preferencia gastronomica</p>
+              <p className="mt-2 font-semibold text-[#18251A]">
                 {guest.food_preferences || "Sin preferencia"}
               </p>
             </div>
-            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
-              <p className="text-sm text-zinc-500">Entradas</p>
-              <p className="mt-2 font-semibold text-zinc-100">{guest.ticket_quantity}</p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 sm:col-span-2">
-              <p className="text-sm text-zinc-500">Notas</p>
-              <p className="mt-2 whitespace-pre-wrap text-zinc-100">
-                {guest.notes || "Sin notas"}
-              </p>
+            <div className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4">
+              <p className="text-sm text-[#7F836F]">Entradas</p>
+              <p className="mt-2 font-semibold text-[#18251A]">{guest.ticket_quantity}</p>
             </div>
           </section>
         ) : null}

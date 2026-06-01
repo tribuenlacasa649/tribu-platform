@@ -114,13 +114,13 @@ export function QRScanner({ onScan, disabled = false }: QRScannerProps) {
   }
 
   return (
-    <section className="space-y-3 rounded-xl border border-white/10 bg-white/[0.04] p-4">
+    <section className="space-y-3 rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4">
       <div className="grid gap-3 sm:grid-cols-2">
         <button
           type="button"
           onClick={startScanner}
           disabled={status === "opening" || status === "scanning" || status === "validating" || disabled}
-          className="min-h-12 rounded-lg bg-emerald-400 px-5 text-base font-semibold text-zinc-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
+          className="min-h-12 rounded-lg bg-[#315C38] px-5 text-base font-semibold text-[#FFFDF8] transition hover:bg-[#294F2F] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {status === "opening" ? "Abriendo..." : "Abrir camara"}
         </button>
@@ -128,13 +128,13 @@ export function QRScanner({ onScan, disabled = false }: QRScannerProps) {
           type="button"
           onClick={() => void stopScanner()}
           disabled={!isScannerVisible}
-          className="min-h-12 rounded-lg border border-white/10 px-5 text-base font-semibold text-zinc-100 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-12 rounded-lg border border-[#18251A]/10 px-5 text-base font-semibold text-[#18251A] transition hover:bg-[#F0EADF] disabled:cursor-not-allowed disabled:opacity-50"
         >
           Cerrar camara
         </button>
       </div>
 
-      <div className="rounded-lg border border-white/10 bg-zinc-950/70 px-4 py-3 text-sm text-zinc-300">
+      <div className="rounded-lg border border-[#18251A]/10 bg-[#F6F1E8]/70 px-4 py-3 text-sm text-[#42503E]">
         {message} Si tu navegador no permite cámara, pegá el link o token abajo.
       </div>
 
@@ -148,7 +148,7 @@ export function QRScanner({ onScan, disabled = false }: QRScannerProps) {
         id={scannerId.current}
         className={
           isScannerVisible
-            ? "min-h-[320px] overflow-hidden rounded-xl border border-white/10 bg-black"
+            ? "min-h-[320px] overflow-hidden rounded-xl border border-[#18251A]/10 bg-black"
             : "hidden"
         }
       />

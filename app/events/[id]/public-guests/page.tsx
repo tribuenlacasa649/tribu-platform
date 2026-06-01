@@ -7,6 +7,7 @@ import { AppShell } from "../../../../components/AppShell";
 import { Badge } from "../../../../components/Badge";
 import { EmptyState } from "../../../../components/EmptyState";
 import { EventContextNav } from "../../../../components/EventContextNav";
+import { formatPhone } from "../../../../lib/phone";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase";
 import type { PaymentStatus, PublicGuestRecord, PublicGuestStatus } from "../../../../types/database";
 
@@ -46,7 +47,7 @@ export default function PublicGuestsAdminPage() {
   async function loadRequests() {
     const { data, error: requestError } = await supabase
       .from("public_guests")
-      .select("id, event_id, full_name, phone, instagram, ticket_quantity, food_preferences, notes, status, payment_status, access_token, created_at")
+      .select("id, event_id, full_name, phone, country_code, instagram, ticket_quantity, food_preferences, notes, status, payment_status, access_token, created_at")
       .eq("event_id", params.id)
       .order("created_at", { ascending: false });
 
@@ -63,7 +64,7 @@ export default function PublicGuestsAdminPage() {
     async function loadInitialRequests() {
       const { data, error: requestError } = await supabase
         .from("public_guests")
-        .select("id, event_id, full_name, phone, instagram, ticket_quantity, food_preferences, notes, status, payment_status, access_token, created_at")
+        .select("id, event_id, full_name, phone, country_code, instagram, ticket_quantity, food_preferences, notes, status, payment_status, access_token, created_at")
         .eq("event_id", params.id)
         .order("created_at", { ascending: false });
 
@@ -101,10 +102,9 @@ export default function PublicGuestsAdminPage() {
     const { error: guestError } = await supabase.from("guests").insert({
       event_id: params.id,
       name: request.full_name,
-      contact: request.phone,
+      contact: formatPhone(request.country_code, request.phone),
       food_preferences: request.food_preferences,
       ticket_quantity: request.ticket_quantity,
-      notes: request.notes,
       status: "active",
     });
 
@@ -121,12 +121,12 @@ export default function PublicGuestsAdminPage() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <EventContextNav eventId={params.id} />
 
-        <header className="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:p-6">
-          <Link href={`/events/${params.id}`} className="text-sm font-semibold text-emerald-300">
+        <header className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10 sm:p-6">
+          <Link href={`/events/${params.id}`} className="text-sm font-semibold text-[#315C38]">
             Volver al evento
           </Link>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">Solicitudes publicas</h1>
-          <p className="mt-2 text-sm text-zinc-400">Reservas recibidas desde el link publico.</p>
+          <p className="mt-2 text-sm text-[#6F7668]">Reservas recibidas desde el link publico.</p>
         </header>
 
         {error ? (
@@ -136,7 +136,7 @@ export default function PublicGuestsAdminPage() {
         ) : null}
 
         {isLoading ? (
-          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-zinc-300">
+          <div className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-5 text-[#42503E]">
             Cargando solicitudes...
           </div>
         ) : requests.length === 0 ? (
@@ -146,28 +146,28 @@ export default function PublicGuestsAdminPage() {
             {requests.map((request) => (
               <article
                 key={request.id}
-                className="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20"
+                className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h2 className="text-lg font-semibold">{request.full_name}</h2>
-                    <p className="mt-1 text-sm text-zinc-400">{request.phone}</p>
+                    <p className="mt-1 text-sm text-[#6F7668]">{request.phone}</p>
                   </div>
                   <Badge tone={statusTone(request.status)}>{statusLabels[request.status]}</Badge>
                 </div>
 
                 <div className="mt-4 grid gap-2 text-sm">
-                  <div className="rounded-lg bg-zinc-950/70 p-3">
-                    <p className="text-zinc-500">Entradas</p>
+                  <div className="rounded-lg bg-[#F6F1E8]/70 p-3">
+                    <p className="text-[#7F836F]">Entradas</p>
                     <p className="mt-1 font-semibold">{request.ticket_quantity}</p>
                   </div>
-                  <div className="rounded-lg bg-zinc-950/70 p-3">
-                    <p className="text-zinc-500">Pago</p>
+                  <div className="rounded-lg bg-[#F6F1E8]/70 p-3">
+                    <p className="text-[#7F836F]">Pago</p>
                     <p className="mt-1 font-semibold">{paymentLabels[request.payment_status]}</p>
                   </div>
                   {request.instagram ? (
-                    <div className="rounded-lg bg-zinc-950/70 p-3">
-                      <p className="text-zinc-500">Instagram</p>
+                    <div className="rounded-lg bg-[#F6F1E8]/70 p-3">
+                      <p className="text-[#7F836F]">Instagram</p>
                       <p className="mt-1 font-semibold">{request.instagram}</p>
                     </div>
                   ) : null}
@@ -177,7 +177,7 @@ export default function PublicGuestsAdminPage() {
                   <button
                     type="button"
                     onClick={() => approveAndCreateGuest(request)}
-                    className="min-h-11 rounded-lg bg-emerald-400 px-4 text-sm font-semibold text-zinc-950"
+                    className="min-h-11 rounded-lg bg-[#315C38] px-4 text-sm font-semibold text-[#FFFDF8]"
                   >
                     Aprobar y crear invitado
                   </button>
@@ -185,14 +185,14 @@ export default function PublicGuestsAdminPage() {
                     <button
                       type="button"
                       onClick={() => updateStatus(request, "approved")}
-                      className="min-h-11 rounded-lg border border-white/10 px-3 text-sm font-semibold text-zinc-100"
+                      className="min-h-11 rounded-lg border border-[#18251A]/10 px-3 text-sm font-semibold text-[#18251A]"
                     >
                       Aprobar
                     </button>
                     <button
                       type="button"
                       onClick={() => updateStatus(request, "cancelled")}
-                      className="min-h-11 rounded-lg bg-red-500 px-3 text-sm font-semibold text-white"
+                      className="min-h-11 rounded-lg bg-red-500 px-3 text-sm font-semibold text-[#18251A]"
                     >
                       Cancelar
                     </button>

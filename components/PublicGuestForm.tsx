@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "../lib/supabase";
 import { createAccessToken } from "../lib/tokens";
 import { getPublicGuestRoute } from "../lib/public-routes";
+import { cleanPhoneNumber, phoneCountries } from "../lib/phone";
 
 type PublicGuestFormProps = {
   eventId: string;
@@ -14,11 +15,11 @@ export function PublicGuestForm({ eventId }: PublicGuestFormProps) {
   const router = useRouter();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [fullName, setFullName] = useState("");
+  const [countryCode, setCountryCode] = useState("+54");
   const [phone, setPhone] = useState("");
   const [instagram, setInstagram] = useState("");
   const [ticketQuantity, setTicketQuantity] = useState(1);
   const [foodPreferences, setFoodPreferences] = useState("");
-  const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -26,7 +27,9 @@ export function PublicGuestForm({ eventId }: PublicGuestFormProps) {
     event.preventDefault();
     setError("");
 
-    if (!fullName.trim() || !phone.trim()) {
+    const cleanPhone = cleanPhoneNumber(phone);
+
+    if (!fullName.trim() || !cleanPhone) {
       setError("Completa nombre y WhatsApp.");
       return;
     }
@@ -37,11 +40,11 @@ export function PublicGuestForm({ eventId }: PublicGuestFormProps) {
     const payload = {
       new_event_id: eventId,
       new_full_name: fullName.trim(),
-      new_phone: phone.trim(),
+      new_country_code: countryCode,
+      new_phone: cleanPhone,
       new_instagram: instagram.trim() || null,
       new_ticket_quantity: Math.max(1, Number(ticketQuantity) || 1),
       new_food_preferences: foodPreferences.trim() || null,
-      new_notes: notes.trim() || null,
       new_access_token: accessToken,
     };
 
@@ -68,52 +71,66 @@ export function PublicGuestForm({ eventId }: PublicGuestFormProps) {
         </div>
       ) : null}
 
-      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20">
+      <div className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-5 shadow-2xl shadow-[#294F2F]/10">
         <div className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="full_name" className="text-sm font-semibold text-zinc-200">
+            <label htmlFor="full_name" className="text-sm font-semibold text-[#18251A]">
               Nombre completo
             </label>
             <input
               id="full_name"
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
-              className="min-h-13 w-full rounded-xl border border-white/10 bg-zinc-950 px-4 text-base text-white outline-none transition placeholder:text-zinc-600 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+              className="min-h-13 w-full rounded-xl border border-[#18251A]/10 bg-[#F6F1E8] px-4 text-base text-[#18251A] outline-none transition placeholder:text-[#7F836F] focus:border-[#315C38] focus:ring-2 focus:ring-[#315C38]/20"
               placeholder="Tu nombre"
               required
             />
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="phone" className="text-sm font-semibold text-zinc-200">
+            <label htmlFor="phone" className="text-sm font-semibold text-[#18251A]">
               WhatsApp
             </label>
-            <input
-              id="phone"
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-              className="min-h-13 w-full rounded-xl border border-white/10 bg-zinc-950 px-4 text-base text-white outline-none transition placeholder:text-zinc-600 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
-              placeholder="+54..."
-              required
-            />
+            <div className="grid grid-cols-[118px_1fr] gap-2">
+              <select
+                value={countryCode}
+                onChange={(event) => setCountryCode(event.target.value)}
+                className="min-h-13 rounded-xl border border-[#18251A]/10 bg-[#F6F1E8] px-3 text-base text-[#18251A] outline-none transition focus:border-[#315C38] focus:ring-2 focus:ring-[#315C38]/20"
+              >
+                {phoneCountries.map((country) => (
+                  <option key={country.code} value={country.code}>
+                    {country.flag} {country.code}
+                  </option>
+                ))}
+              </select>
+              <input
+                id="phone"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+                className="min-h-13 w-full rounded-xl border border-[#18251A]/10 bg-[#F6F1E8] px-4 text-base text-[#18251A] outline-none transition placeholder:text-[#7F836F] focus:border-[#315C38] focus:ring-2 focus:ring-[#315C38]/20"
+                placeholder="11 5555 5555"
+                inputMode="tel"
+                required
+              />
+            </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <label htmlFor="instagram" className="text-sm font-semibold text-zinc-200">
+              <label htmlFor="instagram" className="text-sm font-semibold text-[#18251A]">
                 Instagram
               </label>
               <input
                 id="instagram"
                 value={instagram}
                 onChange={(event) => setInstagram(event.target.value)}
-                className="min-h-13 w-full rounded-xl border border-white/10 bg-zinc-950 px-4 text-base text-white outline-none transition placeholder:text-zinc-600 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+                className="min-h-13 w-full rounded-xl border border-[#18251A]/10 bg-[#F6F1E8] px-4 text-base text-[#18251A] outline-none transition placeholder:text-[#7F836F] focus:border-[#315C38] focus:ring-2 focus:ring-[#315C38]/20"
                 placeholder="@usuario"
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="quantity" className="text-sm font-semibold text-zinc-200">
+              <label htmlFor="quantity" className="text-sm font-semibold text-[#18251A]">
                 Entradas
               </label>
               <input
@@ -123,34 +140,20 @@ export function PublicGuestForm({ eventId }: PublicGuestFormProps) {
                 max={10}
                 value={ticketQuantity}
                 onChange={(event) => setTicketQuantity(Number(event.target.value))}
-                className="min-h-13 w-full rounded-xl border border-white/10 bg-zinc-950 px-4 text-base text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+                className="min-h-13 w-full rounded-xl border border-[#18251A]/10 bg-[#F6F1E8] px-4 text-base text-[#18251A] outline-none transition focus:border-[#315C38] focus:ring-2 focus:ring-[#315C38]/20"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="food" className="text-sm font-semibold text-zinc-200">
+            <label htmlFor="food" className="text-sm font-semibold text-[#18251A]">
               Preferencias gastronomicas
             </label>
             <input
               id="food"
               value={foodPreferences}
               onChange={(event) => setFoodPreferences(event.target.value)}
-              className="min-h-13 w-full rounded-xl border border-white/10 bg-zinc-950 px-4 text-base text-white outline-none transition placeholder:text-zinc-600 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
-              placeholder="Opcional"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="notes" className="text-sm font-semibold text-zinc-200">
-              Notas
-            </label>
-            <textarea
-              id="notes"
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              rows={3}
-              className="w-full rounded-xl border border-white/10 bg-zinc-950 px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-600 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+              className="min-h-13 w-full rounded-xl border border-[#18251A]/10 bg-[#F6F1E8] px-4 text-base text-[#18251A] outline-none transition placeholder:text-[#7F836F] focus:border-[#315C38] focus:ring-2 focus:ring-[#315C38]/20"
               placeholder="Opcional"
             />
           </div>
@@ -160,7 +163,7 @@ export function PublicGuestForm({ eventId }: PublicGuestFormProps) {
       <button
         type="submit"
         disabled={isSaving}
-        className="min-h-14 w-full rounded-xl bg-emerald-400 px-5 text-lg font-semibold text-zinc-950 transition hover:bg-emerald-300 disabled:opacity-60"
+        className="min-h-14 w-full rounded-xl bg-[#315C38] px-5 text-lg font-semibold text-[#FFFDF8] transition hover:bg-[#294F2F] disabled:opacity-60"
       >
         {isSaving ? "Reservando..." : "Reservar entrada"}
       </button>
