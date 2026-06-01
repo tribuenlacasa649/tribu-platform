@@ -49,10 +49,10 @@ export default function EventsPage() {
   return (
     <AppShell title="Eventos">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <header className="flex flex-col gap-4 rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <header className="flex flex-col gap-4 rounded-[1.5rem] border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-medium text-[#315C38]">Gestion</p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight">Eventos</h1>
+            <p className="text-sm font-black uppercase tracking-wide text-[#315C38]">Seleccioná un evento</p>
+            <h1 className="mt-1 text-2xl font-black tracking-tight">Elegí el evento que querés administrar.</h1>
           </div>
           <Link
             href="/events/new"
@@ -80,7 +80,7 @@ export default function EventsPage() {
             actionLabel="Crear evento"
           />
         ) : (
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {events.map((event) => (
               <Link
                 key={event.id}
@@ -91,10 +91,10 @@ export default function EventsPage() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={event.event_banner_url} alt={event.name} className="h-32 w-full object-cover" />
                 ) : null}
-                <div className="p-4">
+                <div className="p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h2 className="text-xl font-semibold leading-tight text-[#18251A]">
+                    <h2 className="text-lg font-black leading-tight text-[#18251A]">
                       {event.name}
                     </h2>
                     <p className="mt-2 text-sm text-[#6F7668]">
@@ -106,7 +106,7 @@ export default function EventsPage() {
                   </Badge>
                 </div>
 
-                <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
+                <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                   <div className="rounded-lg bg-[#F6F1E8]/70 p-3">
                     <p className="text-[#7F836F]">Creado</p>
                     <p className="mt-1 font-medium text-[#18251A]">
@@ -121,10 +121,11 @@ export default function EventsPage() {
                   </div>
                 </div>
 
-                <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium text-[#6F7668]">
+                <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-[#6F7668]">
                   <span className="rounded-full bg-[#F0EADF] px-3 py-1">Invitados</span>
                   <span className="rounded-full bg-[#F0EADF] px-3 py-1">QR</span>
                   <span className="rounded-full bg-[#F0EADF] px-3 py-1">Scanner QR</span>
+                  <span className="ml-auto rounded-full bg-[#315C38] px-3 py-1 text-[#FFFDF8]">Abrir</span>
                 </div>
                 </div>
               </Link>

@@ -1,7 +1,6 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useMemo, useState } from "react";
-import { CopyButton } from "./CopyButton";
 import { createSupabaseBrowserClient } from "../lib/supabase";
 
 type PaymentNoticeFormProps = {
@@ -13,14 +12,12 @@ type PaymentNoticeFormProps = {
   onNotified: () => void;
 };
 
-const paymentAlias = "An.enfotos";
-const paymentHolder = "Ana Laura Harboure";
 const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
 const maxFileSize = 5 * 1024 * 1024;
 
 export function PaymentNoticeForm({
   accessToken,
-  amount,
+  amount: _amount,
   defaultReference,
   defaultProof,
   defaultProofFileUrl,
@@ -116,38 +113,13 @@ export function PaymentNoticeForm({
     }
   }
 
-  const amountLabel = amount > 0 ? `$${Math.round(amount).toLocaleString("es-AR")}` : "A confirmar";
   const hasValidReference = reference.trim().length >= 4;
   const hasProofFile = Boolean(selectedFile || proofFileUrl);
   const canSubmit = hasValidReference || hasProofFile;
   const showValidationWarning = !canSubmit && (reference.length > 0 || proof.length > 0);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-5">
-      <div>
-        <h3 className="text-xl font-semibold">Pagar / avisar pago</h3>
-        <p className="mt-2 text-sm leading-6 text-[#6F7668]">
-          Transferí y avisá el comprobante. Producción revisa y activa tu QR.
-        </p>
-      </div>
-
-      <div className="grid gap-3">
-        <div className="rounded-xl bg-[#F6F1E8]/70 p-4">
-          <p className="text-sm text-[#7F836F]">Alias</p>
-          <p className="mt-1 text-lg font-semibold">{paymentAlias}</p>
-          <div className="mt-3">
-            <CopyButton value={paymentAlias} label="Copiar alias" />
-          </div>
-        </div>
-        <div className="rounded-xl bg-[#F6F1E8]/70 p-4">
-          <p className="text-sm text-[#7F836F]">Titular</p>
-          <p className="mt-1 font-semibold">{paymentHolder}</p>
-        </div>
-        <div className="rounded-xl bg-[#F6F1E8]/70 p-4">
-          <p className="text-sm text-[#7F836F]">Monto</p>
-          <p className="mt-1 text-lg font-semibold">{amountLabel}</p>
-        </div>
-      </div>
+    <form onSubmit={handleSubmit} className="space-y-3">
 
       {error ? (
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
@@ -191,7 +163,7 @@ export function PaymentNoticeForm({
             setProof(event.target.value);
             setError("");
           }}
-          rows={3}
+          rows={2}
           className="w-full rounded-xl border border-[#18251A]/10 bg-[#F6F1E8] px-4 py-3 text-[#18251A] outline-none focus:border-[#315C38] focus:ring-2 focus:ring-[#315C38]/20"
           placeholder="Pegá el texto, link o detalle del comprobante"
         />

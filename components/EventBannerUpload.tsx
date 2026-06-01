@@ -68,7 +68,7 @@ export function EventBannerUpload({ eventId, value, onChange }: EventBannerUploa
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-[#18251A]">Banner</p>
-          <p className="mt-1 text-xs text-[#7F836F]">JPG, PNG o WEBP. Maximo 5 MB.</p>
+          <p className="mt-1 text-xs text-[#7F836F]">Recomendado: 1600 x 900 px, 16:9, JPG o PNG, menos de 2 MB.</p>
         </div>
         {value ? (
           <button

@@ -5,10 +5,9 @@ import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Badge } from "../../../../components/Badge";
 import { CopyButton } from "../../../../components/CopyButton";
-import { PaymentNoticeForm } from "../../../../components/PaymentNoticeForm";
-import { PaymentStatusCard } from "../../../../components/PaymentStatusCard";
-import { QRCodeBox } from "../../../../components/QRCodeBox";
 import { LocationCard } from "../../../../components/LocationCard";
+import { PaymentNoticeForm } from "../../../../components/PaymentNoticeForm";
+import { QRCodeBox } from "../../../../components/QRCodeBox";
 import { formatMoney } from "../../../../lib/payments";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase";
 import { getPublicTicketUrl } from "../../../../lib/tickets";
@@ -54,22 +53,37 @@ type PublicGuestTicket = {
   max_uses: number;
 };
 
-const statusLabels: Record<PublicGuestStatus, string> = {
-  pending: "Solicitud recibida",
-  approved: "Solicitud aprobada",
-  cancelled: "Solicitud cancelada",
+const paymentAlias = "An.enfotos";
+const paymentHolder = "Ana Laura Harboure";
+
+const paymentLabels: Record<PaymentStatus, string> = {
+  pending: "Pendiente",
+  notified: "Avisado",
+  confirmed: "Confirmado",
+  rejected: "Rechazado",
 };
 
-function getTone(status: PublicGuestStatus) {
-  if (status === "approved") {
-    return "success";
+const paymentTone: Record<PaymentStatus, "neutral" | "warning" | "success" | "danger"> = {
+  pending: "neutral",
+  notified: "warning",
+  confirmed: "success",
+  rejected: "danger",
+};
+
+function getTicketSummary(tickets: PublicGuestTicket[], paymentStatus: PaymentStatus) {
+  if (paymentStatus !== "confirmed") {
+    return "QR pendiente";
   }
 
-  if (status === "cancelled") {
-    return "danger";
+  if (tickets.length === 0) {
+    return "Activando QR";
   }
 
-  return "warning";
+  if (tickets.every((ticket) => ticket.status === "used")) {
+    return "Usadas";
+  }
+
+  return "QR activo";
 }
 
 export default function PublicGuestPortalPage() {
@@ -105,35 +119,18 @@ export default function PublicGuestPortalPage() {
 
   useEffect(() => {
     async function loadInitialPortal() {
-      const { data, error: requestError } = await supabase.rpc(
-        "get_public_guest_by_token",
-        { lookup_token: params.accessToken }
-      );
-
-      const firstRow = Array.isArray(data) ? data[0] : null;
-
-      if (requestError || !firstRow) {
-        setError(requestError?.message || "No encontramos esta solicitud.");
-        setIsLoading(false);
-        return;
-      }
-
-      setGuest(firstRow as PublicGuestPortalRecord);
-
-      const { data: ticketData } = await supabase.rpc("get_public_tickets_by_guest_token", {
-        lookup_token: params.accessToken,
-      });
-      setTickets((ticketData ?? []) as PublicGuestTicket[]);
-      setIsLoading(false);
+      await loadPortal();
     }
 
     loadInitialPortal();
-  }, [params.accessToken, supabase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.accessToken]);
 
   const currentUrl =
     typeof window === "undefined" ? `/p/guest/${params.accessToken}` : window.location.href;
   const amount = (guest?.event_ticket_price ?? 0) * (guest?.ticket_quantity ?? 0);
   const ticketUrls = tickets.map((ticket) => getPublicTicketUrl(ticket.token));
+  const referenceToCopy = guest?.payment_reference || guest?.access_token.slice(0, 8).toUpperCase() || "";
   const whatsappUrl =
     guest && ticketUrls.length
       ? createWhatsAppUrl(
@@ -146,51 +143,71 @@ export default function PublicGuestPortalPage() {
       : "";
 
   return (
-    <main className="min-h-screen bg-[#F6F1E8] px-4 py-6 text-[#18251A]">
-      <div className="mx-auto flex w-full max-w-md flex-col gap-4">
-        <header className="overflow-hidden rounded-[1.5rem] border border-[#18251A]/10 bg-[#FFFDF8] text-center shadow-2xl shadow-[#294F2F]/10">
-          {guest?.event_banner_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={guest.event_banner_url} alt={guest.event_public_title || guest.event_name || "Evento"} className="h-36 w-full object-cover" />
-          ) : null}
-          <div className="p-4">
-          <p className="text-sm font-semibold text-[#315C38]">Tribu Platform</p>
-          <h1 className="mt-1 text-2xl font-semibold">Tu reserva</h1>
-          </div>
-        </header>
-
+    <main className="min-h-screen bg-[#F6F1E8] px-4 py-4 text-[#18251A]">
+      <div className="mx-auto flex w-full max-w-md flex-col gap-3">
         {isLoading ? (
-          <div className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-5 text-[#42503E]">
+          <div className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 text-[#42503E]">
             Cargando...
           </div>
         ) : error ? (
-          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-5 text-red-100">
+          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-red-100">
             {error}
           </div>
         ) : guest ? (
           <>
+            <header className="overflow-hidden rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] shadow-2xl shadow-[#294F2F]/10">
+              {guest.event_banner_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={guest.event_banner_url} alt={guest.event_public_title || guest.event_name || "Evento"} className="h-28 w-full object-cover" />
+              ) : null}
+              <div className="p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#315C38]">Tu reserva</p>
+                <h1 className="mt-1 text-2xl font-semibold">{guest.full_name}</h1>
+                <p className="mt-1 truncate text-sm text-[#6F7668]">
+                  {guest.event_public_title || guest.event_name || "Evento"}
+                </p>
+              </div>
+            </header>
+
             <section className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10">
-              <Badge tone={getTone(guest.status)}>{statusLabels[guest.status]}</Badge>
-              <h2 className="mt-3 text-2xl font-semibold">{guest.full_name}</h2>
-              <p className="mt-2 text-[#6F7668]">
-                {guest.event_public_title || guest.event_name || "Evento"}
-              </p>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#7F836F]">Estado pago</p>
+                  <h2 className="mt-1 text-xl font-semibold">{paymentLabels[guest.payment_status]}</h2>
+                </div>
+                <Badge tone={paymentTone[guest.payment_status]}>{paymentLabels[guest.payment_status]}</Badge>
+              </div>
+              {guest.payment_status === "notified" ? (
+                <p className="mt-2 text-sm text-[#6F7668]">Pago avisado. Producción lo revisa y activa el QR.</p>
+              ) : null}
+              {guest.payment_status === "rejected" ? (
+                <p className="mt-2 text-sm text-[#F36F4A]">No pudimos confirmar el pago. Volvé a cargar comprobante.</p>
+              ) : null}
             </section>
 
-            <PaymentStatusCard
-              reservationStatus={guest.status}
-              paymentStatus={guest.payment_status}
-              ticketQuantity={guest.ticket_quantity}
-              amount={amount}
-            />
+            <section className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#7F836F]">Pago</p>
+                  <p className="mt-2 text-lg font-semibold">{formatMoney(amount)}</p>
+                </div>
+                <div className="text-right text-sm">
+                  <p className="font-semibold">{paymentAlias}</p>
+                  <p className="text-[#6F7668]">{paymentHolder}</p>
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <CopyButton value={paymentAlias} label="Copiar alias" />
+                <CopyButton value={referenceToCopy} label="Copiar referencia" />
+              </div>
+            </section>
 
-            {guest.payment_status === "pending" || guest.payment_status === "rejected" ? (
-              <>
-                {guest.payment_status === "rejected" ? (
-                  <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-5 text-sm text-red-100">
-                    No pudimos confirmar el pago anterior. Revisá los datos y volvé a avisar.
-                  </div>
-                ) : null}
+            <section className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-4">
+              <div className="mb-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#7F836F]">Comprobante</p>
+                <h2 className="mt-1 text-lg font-semibold">Avisar pago</h2>
+              </div>
+              {guest.payment_status === "pending" || guest.payment_status === "rejected" ? (
                 <PaymentNoticeForm
                   accessToken={guest.access_token}
                   amount={amount}
@@ -199,79 +216,94 @@ export default function PublicGuestPortalPage() {
                   defaultProofFileUrl={guest.payment_proof_file_url}
                   onNotified={loadPortal}
                 />
-              </>
-            ) : null}
-
-            {guest.payment_status === "notified" ? (
-              <section className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-5">
-                <h3 className="text-xl font-semibold">Pago informado</h3>
-                <p className="mt-2 text-sm leading-6 text-amber-100">
-                  Recibimos tu aviso. Producción va a revisar el pago y activar tu QR.
-                </p>
-              </section>
-            ) : null}
-
-            {guest.payment_status === "confirmed" ? (
-              <section className="space-y-4">
-                <div className="rounded-2xl border border-[#315C38]/20 bg-[#315C38]/10 p-5">
-                  <h3 className="text-xl font-semibold">Pago confirmado</h3>
-                  <p className="mt-2 text-sm text-[#294F2F]">
-                    Tus entradas están activas. Mostrá el QR en la puerta.
+              ) : (
+                <div className="grid gap-2 text-sm">
+                  <p className="text-[#6F7668]">
+                    {guest.payment_status === "confirmed" ? "Pago confirmado." : "Comprobante recibido."}
                   </p>
+                  {guest.payment_proof_file_url ? (
+                    <a
+                      href={guest.payment_proof_file_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex min-h-11 items-center justify-center rounded-xl border border-[#18251A]/10 px-3 font-semibold text-[#315C38]"
+                    >
+                      Ver comprobante
+                    </a>
+                  ) : null}
                 </div>
-
-                {tickets.length === 0 ? (
-                  <div className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-5 text-sm text-[#42503E]">
-                    El pago está confirmado. Si aún no ves QR, producción está terminando de activarlo.
-                  </div>
-                ) : (
-                  tickets.map((ticket, index) => (
-                    <div key={ticket.id} className="space-y-3">
-                      <div className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-4">
-                        <p className="text-sm text-[#7F836F]">Entrada {index + 1}</p>
-                        <p className="mt-1 font-semibold">{ticket.status}</p>
-                      </div>
-                      <QRCodeBox value={getPublicTicketUrl(ticket.token)} size={260} />
-                      <Link
-                        href={`/ticket/${ticket.token}`}
-                        className="flex min-h-12 items-center justify-center rounded-xl bg-[#315C38] px-5 font-semibold text-[#FFFDF8]"
-                      >
-                        Ver entrada
-                      </Link>
-                    </div>
-                  ))
-                )}
-                {whatsappUrl ? (
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex min-h-12 items-center justify-center rounded-xl bg-[#315C38] px-5 font-semibold text-[#FFFDF8]"
-                  >
-                    Enviar a WhatsApp
-                  </a>
-                ) : null}
-              </section>
-            ) : null}
-
-            <LocationCard
-              name={guest.event_location_name || guest.event_location}
-              address={guest.event_location_address}
-              mapsUrl={guest.event_location_maps_url}
-              compact={guest.payment_status !== "confirmed"}
-            />
-
-            <section className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-4">
-              <h3 className="text-lg font-semibold">Evento</h3>
-              <p className="mt-2 text-sm leading-6 text-[#42503E]">
-                Total: {formatMoney(amount)}. Guardá este link para consultar tu estado.
-              </p>
+              )}
             </section>
 
-            <CopyButton value={currentUrl} label="Copiar mi link" />
-            <Link href="/p" className="text-center text-sm font-semibold text-[#315C38]">
-              Ver otros eventos
-            </Link>
+            <section className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#7F836F]">Entradas</p>
+                  <h2 className="mt-1 text-xl font-semibold">{guest.ticket_quantity}</h2>
+                </div>
+                <Badge tone={guest.payment_status === "confirmed" && tickets.length ? "success" : "neutral"}>
+                  {getTicketSummary(tickets, guest.payment_status)}
+                </Badge>
+              </div>
+
+              {guest.payment_status === "confirmed" ? (
+                <div className="mt-4 grid gap-3">
+                  {tickets.length === 0 ? (
+                    <p className="text-sm text-[#6F7668]">Producción está terminando de activar tus entradas.</p>
+                  ) : (
+                    tickets.map((ticket, index) => (
+                      <details key={ticket.id} className="rounded-2xl bg-[#F6F1E8] p-3">
+                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+                          <span className="font-semibold">Entrada {index + 1}</span>
+                          <Badge tone={ticket.status === "available" ? "success" : ticket.status === "used" ? "warning" : "danger"}>
+                            {ticket.status}
+                          </Badge>
+                        </summary>
+                        <div className="mt-3 grid gap-3">
+                          <QRCodeBox value={getPublicTicketUrl(ticket.token)} size={230} />
+                          <Link
+                            href={`/ticket/${ticket.token}`}
+                            className="flex min-h-11 items-center justify-center rounded-xl bg-[#315C38] px-4 font-semibold text-[#FFFDF8]"
+                          >
+                            Ver entrada
+                          </Link>
+                          <CopyButton value={getPublicTicketUrl(ticket.token)} label="Copiar entrada" />
+                        </div>
+                      </details>
+                    ))
+                  )}
+                  {whatsappUrl ? (
+                    <a
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex min-h-11 items-center justify-center rounded-xl bg-[#315C38] px-4 font-semibold text-[#FFFDF8]"
+                    >
+                      Enviar a WhatsApp
+                    </a>
+                  ) : null}
+                </div>
+              ) : null}
+            </section>
+
+            {guest.payment_status === "confirmed" ? (
+              <LocationCard
+                name={guest.event_location_name || guest.event_location}
+                address={guest.event_location_address}
+                mapsUrl={guest.event_location_maps_url}
+                compact
+              />
+            ) : null}
+
+            <div className="grid grid-cols-2 gap-2">
+              <CopyButton value={currentUrl} label="Copiar mi link" />
+              <Link
+                href="/p"
+                className="flex min-h-11 items-center justify-center rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] px-3 text-sm font-semibold text-[#315C38]"
+              >
+                Más eventos
+              </Link>
+            </div>
           </>
         ) : null}
       </div>

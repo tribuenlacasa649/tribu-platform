@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { LocationCard } from "../../../../components/LocationCard";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase";
 import { getPublicEventRegisterRoute } from "../../../../lib/public-routes";
 import type { EventRecord } from "../../../../types/database";
@@ -17,6 +16,29 @@ function formatDate(value: string | null) {
     day: "2-digit",
     month: "long",
     year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function formatDateOnly(value: string | null) {
+  if (!value) {
+    return "A confirmar";
+  }
+
+  return new Intl.DateTimeFormat("es-AR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function formatTime(value: string | null) {
+  if (!value) {
+    return "A confirmar";
+  }
+
+  return new Intl.DateTimeFormat("es-AR", {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
@@ -103,13 +125,33 @@ export default function PublicEventPage() {
                 <p className="text-sm text-[#7F836F]">Entrada</p>
                 <p className="mt-2 font-semibold">{formatPrice(event.ticket_price)}</p>
               </div>
+              <div className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-4">
+                <p className="text-sm text-[#7F836F]">Estado</p>
+                <p className="mt-2 font-semibold">Reserva disponible</p>
+              </div>
             </section>
 
-            <LocationCard
-              name={event.location_name || event.location}
-              address={event.location_address}
-              mapsUrl={event.location_maps_url}
-            />
+            <section className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10">
+              <h2 className="text-lg font-semibold">Información del evento</h2>
+              <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-xl bg-[#F6F1E8] p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7F836F]">Fecha</p>
+                  <p className="mt-1 font-semibold">{formatDateOnly(event.starts_at)}</p>
+                </div>
+                <div className="rounded-xl bg-[#F6F1E8] p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7F836F]">Hora</p>
+                  <p className="mt-1 font-semibold">{formatTime(event.starts_at)}</p>
+                </div>
+                <div className="rounded-xl bg-[#F6F1E8] p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7F836F]">Lugar</p>
+                  <p className="mt-1 font-semibold">{event.location_name || event.location || "A confirmar"}</p>
+                </div>
+                <div className="rounded-xl bg-[#F6F1E8] p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7F836F]">Dirección</p>
+                  <p className="mt-1 font-semibold">{event.location_address || event.location || "A confirmar"}</p>
+                </div>
+              </div>
+            </section>
 
             <Link
               href={getPublicEventRegisterRoute(event.slug || params.slug)}

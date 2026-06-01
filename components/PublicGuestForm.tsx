@@ -23,6 +23,10 @@ export function PublicGuestForm({ eventId }: PublicGuestFormProps) {
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
+  function updateTicketQuantity(nextValue: number) {
+    setTicketQuantity(Math.min(10, Math.max(1, nextValue)));
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -130,18 +134,35 @@ export function PublicGuestForm({ eventId }: PublicGuestFormProps) {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="quantity" className="text-sm font-semibold text-[#18251A]">
+              <label className="text-sm font-semibold text-[#18251A]">
                 Entradas
               </label>
-              <input
-                id="quantity"
-                type="number"
-                min={1}
-                max={10}
-                value={ticketQuantity}
-                onChange={(event) => setTicketQuantity(Number(event.target.value))}
-                className="min-h-13 w-full rounded-xl border border-[#18251A]/10 bg-[#F6F1E8] px-4 text-base text-[#18251A] outline-none transition focus:border-[#315C38] focus:ring-2 focus:ring-[#315C38]/20"
-              />
+              <div className="grid min-h-13 grid-cols-[56px_1fr_56px] overflow-hidden rounded-xl border border-[#18251A]/10 bg-[#F6F1E8]">
+                <button
+                  type="button"
+                  onClick={() => updateTicketQuantity(ticketQuantity - 1)}
+                  disabled={ticketQuantity <= 1}
+                  className="text-2xl font-semibold text-[#315C38] transition hover:bg-[#DCE5D2] disabled:cursor-not-allowed disabled:opacity-35"
+                  aria-label="Restar entrada"
+                >
+                  -
+                </button>
+                <div className="flex flex-col items-center justify-center border-x border-[#18251A]/10">
+                  <span className="text-2xl font-semibold leading-none">{ticketQuantity}</span>
+                  <span className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#7F836F]">
+                    máximo 10
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => updateTicketQuantity(ticketQuantity + 1)}
+                  disabled={ticketQuantity >= 10}
+                  className="text-2xl font-semibold text-[#315C38] transition hover:bg-[#DCE5D2] disabled:cursor-not-allowed disabled:opacity-35"
+                  aria-label="Sumar entrada"
+                >
+                  +
+                </button>
+              </div>
             </div>
           </div>
 
