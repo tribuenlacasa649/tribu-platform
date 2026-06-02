@@ -24,7 +24,7 @@ const moduleSegments: Record<EventModuleKey, string> = {
 
 const moduleLabels: Record<EventModuleKey, string> = {
   summary: "Resumen",
-  guests: "Invitados",
+  guests: "Participantes",
   tickets: "Entradas",
   checkin: "Scanner QR",
   payments: "Pagos",
@@ -33,10 +33,10 @@ const moduleLabels: Record<EventModuleKey, string> = {
 
 const moduleDescriptions: Record<EventModuleKey, string> = {
   summary: "Estado general del evento.",
-  guests: "Lista, preferencias y entradas.",
-  tickets: "Generar y revisar QR.",
+  guests: "Invitados, pagos, entradas, QR y WhatsApp.",
+  tickets: "Centralizado en Participantes.",
   checkin: "Validar QR en puerta.",
-  payments: "Control manual de pagos.",
+  payments: "Centralizado en Participantes.",
   reports: "Asistencia y pagos.",
 };
 
@@ -46,14 +46,12 @@ export function getEventRoute(eventId: string, module: EventModuleKey) {
 }
 
 export function getEventModuleLinks(eventId: string): EventModuleLink[] {
-  return (["summary", "guests", "tickets", "checkin", "payments", "reports"] as const).map(
-    (key) => ({
-      key,
-      label: moduleLabels[key],
-      href: getEventRoute(eventId, key),
-      description: moduleDescriptions[key],
-    })
-  );
+  return (["summary", "guests", "checkin", "reports"] as const).map((key) => ({
+    key,
+    label: moduleLabels[key],
+    href: getEventRoute(eventId, key),
+    description: moduleDescriptions[key],
+  }));
 }
 
 export function getEventIdFromPathname(pathname: string) {
@@ -79,20 +77,12 @@ export function getActiveEventModule(pathname: string): EventModuleKey | null {
     return "summary";
   }
 
-  if (segment === "guests") {
+  if (segment === "guests" || segment === "tickets" || segment === "payments") {
     return "guests";
-  }
-
-  if (segment === "tickets") {
-    return "tickets";
   }
 
   if (segment === "checkin") {
     return "checkin";
-  }
-
-  if (segment === "payments") {
-    return "payments";
   }
 
   if (segment === "reports") {

@@ -12,25 +12,22 @@ type EventOverviewProps = {
 };
 
 const modules = [
-  { key: "guests", label: "Invitados", helper: "Lista central", tone: "green" },
-  { key: "payments", label: "Pagos", helper: "Validacion", tone: "amber" },
-  { key: "tickets", label: "Entradas", helper: "QR únicos", tone: "blue" },
+  { key: "guests", label: "Participantes", helper: "Pagos, QR y WhatsApp", tone: "green" },
   { key: "checkin", label: "Scanner QR", helper: "Puerta", tone: "purple" },
+  { key: "reports", label: "Reportes", helper: "Asistencia", tone: "amber" },
 ] as const;
 
 const toneClasses = {
   green: "bg-[#DCE5D2] text-[#294F2F] border-[#315C38]/15",
   amber: "bg-[#F8E8BF] text-[#8A5B00] border-[#F2C66D]/30",
-  blue: "bg-[#DDE9F7] text-[#155FB8] border-[#155FB8]/15",
   purple: "bg-[#E9DDF8] text-[#5B2DB4] border-[#5B2DB4]/15",
 };
 
 export function EventOverview({ eventId, stats }: EventOverviewProps) {
   const values = {
     guests: stats.guests,
-    payments: stats.confirmedPayments,
-    tickets: stats.tickets,
     checkin: stats.usedTickets,
+    reports: stats.tickets,
   };
 
   return (
@@ -40,12 +37,12 @@ export function EventOverview({ eventId, stats }: EventOverviewProps) {
           <p className="text-xs font-semibold uppercase text-[#315C38]">Operacion</p>
           <h2 className="text-xl font-semibold">Centro del evento</h2>
         </div>
-        <Link href={getEventRoute(eventId, "reports")} className="text-sm font-semibold text-[#315C38]">
-          Reportes
+        <Link href={getEventRoute(eventId, "guests")} className="text-sm font-semibold text-[#315C38]">
+          Participantes
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-3 gap-3">
         {modules.map((module) => (
           <Link
             key={module.key}

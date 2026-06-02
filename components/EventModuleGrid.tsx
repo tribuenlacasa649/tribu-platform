@@ -6,13 +6,11 @@ type EventModuleGridProps = {
   eventId: string;
 };
 
-const activeModules = ["guests", "tickets", "checkin", "payments", "reports"];
-
 export function EventModuleGrid({ eventId }: EventModuleGridProps) {
   return (
     <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
       {getEventModuleLinks(eventId)
-        .filter((module) => activeModules.includes(module.key))
+        .filter((module) => module.key !== "summary")
         .map((module) => (
           <Link
             key={module.key}

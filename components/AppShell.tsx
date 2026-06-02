@@ -27,8 +27,8 @@ function getNavigation(eventId: string | null): NavItem[] {
     { href: "/dashboard", label: "Inicio", short: "Inicio", active: true },
     {
       href: eventId ? getEventRoute(eventId, "guests") : "/events",
-      label: "Invitados",
-      short: "Lista",
+      label: "Participantes",
+      short: "Personas",
       active: true,
     },
     {
@@ -38,24 +38,12 @@ function getNavigation(eventId: string | null): NavItem[] {
       active: true,
     },
     {
-      href: eventId ? getEventRoute(eventId, "tickets") : "/events",
-      label: "Entradas",
-      short: "Tickets",
-      active: true,
-    },
-    {
       href: eventId ? getEventRoute(eventId, "reports") : "/events",
       label: "Reportes",
       short: "Stats",
       active: true,
     },
     { href: "/events", label: "Eventos", short: "Eventos", active: true },
-    {
-      href: eventId ? getEventRoute(eventId, "payments") : "/events",
-      label: "Pagos",
-      short: "Pagos",
-      active: true,
-    },
   ];
 }
 
