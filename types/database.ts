@@ -12,6 +12,14 @@ export type PublicEventStatus = "draft" | "published" | "closed";
 
 export type PublicGuestStatus = "pending" | "approved" | "cancelled";
 
+export type CashMovementType = "income" | "expense";
+
+export type SupplierStatus = "pending" | "confirmed" | "paid" | "cancelled";
+
+export type StaffPaymentStatus = "pending" | "paid";
+
+export type StaffAttendanceStatus = "scheduled" | "present" | "absent";
+
 export type ProfileRecord = {
   id: string;
   full_name: string | null;
@@ -177,4 +185,119 @@ export type PublicGuestWithEvent = PublicGuestRecord & {
         | "ticket_price"
       >
     | null;
+};
+
+export type CashMovementRecord = {
+  id: string;
+  event_id: string;
+  type: CashMovementType;
+  category: string;
+  description: string | null;
+  amount: number;
+  payment_method: string | null;
+  date: string;
+  notes: string | null;
+  created_at: string;
+};
+
+export type SupplierRecord = {
+  id: string;
+  name: string;
+  category: string | null;
+  contact_name: string | null;
+  phone: string | null;
+  instagram: string | null;
+  email: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
+export type EventSupplierRecord = {
+  id: string;
+  event_id: string;
+  supplier_id: string;
+  agreed_amount: number;
+  paid_amount: number;
+  status: SupplierStatus;
+  notes: string | null;
+  created_at: string;
+};
+
+export type StaffMemberRecord = {
+  id: string;
+  full_name: string;
+  phone: string | null;
+  role: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
+export type EventStaffRecord = {
+  id: string;
+  event_id: string;
+  staff_member_id: string;
+  role: string;
+  start_time: string | null;
+  end_time: string | null;
+  payment_amount: number;
+  payment_status: StaffPaymentStatus;
+  attendance_status: StaffAttendanceStatus;
+  notes: string | null;
+  created_at: string;
+};
+
+export type CommunityMemberRecord = {
+  id: string;
+  full_name: string;
+  phone: string | null;
+  instagram: string | null;
+  email: string | null;
+  tags: string[];
+  notes: string | null;
+  first_seen_at: string | null;
+  last_seen_at: string | null;
+  created_at: string;
+};
+
+export type AttendanceHistoryRecord = {
+  id: string;
+  community_member_id: string;
+  event_id: string | null;
+  guest_id: string | null;
+  public_guest_id: string | null;
+  ticket_id: string | null;
+  attended: boolean;
+  payment_status: PaymentStatus | null;
+  created_at: string;
+};
+
+export type RecipeRecord = {
+  id: string;
+  name: string;
+  category: string | null;
+  description: string | null;
+  servings_base: number;
+  instructions: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
+export type RecipeIngredientRecord = {
+  id: string;
+  recipe_id: string;
+  name: string;
+  quantity: number;
+  unit: string | null;
+  unit_cost: number;
+  total_cost: number;
+  created_at: string;
+};
+
+export type EventRecipeRecord = {
+  id: string;
+  event_id: string;
+  recipe_id: string;
+  planned_servings: number;
+  notes: string | null;
+  created_at: string;
 };

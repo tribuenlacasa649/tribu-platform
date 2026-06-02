@@ -158,6 +158,27 @@ export default function DashboardPage() {
         </Link>
 
         <section className="space-y-3">
+          <h2 className="text-lg font-black text-[#18251A]">Accesos rápidos</h2>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+            {[
+              { label: "Caja", href: mainEvent ? `/events/${mainEvent.id}/cash` : "/events" },
+              { label: "Staff", href: mainEvent ? `/events/${mainEvent.id}/staff` : "/events" },
+              { label: "Proveedores", href: mainEvent ? `/events/${mainEvent.id}/suppliers` : "/events" },
+              { label: "Comunidad", href: "/community" },
+              { label: "Recetario", href: "/recipes" },
+            ].map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="tribu-card flex min-h-20 items-center justify-center rounded-[1.5rem] px-4 text-center text-sm font-black text-[#294F2F]"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="space-y-3">
           <h2 className="text-lg font-black text-[#18251A]">Eventos recientes</h2>
 
           {isLoading ? (

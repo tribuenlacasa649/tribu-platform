@@ -23,7 +23,7 @@ export function EventModuleGrid({ eventId }: EventModuleGridProps) {
           </Link>
         ))}
 
-      {["Produccion", "Stock"].map((module) => (
+      {["Stock"].map((module) => (
         <div
           key={module}
           className="rounded-xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 opacity-75"

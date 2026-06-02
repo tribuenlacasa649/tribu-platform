@@ -44,6 +44,8 @@ function getNavigation(eventId: string | null): NavItem[] {
       active: true,
     },
     { href: "/events", label: "Eventos", short: "Eventos", active: true },
+    { href: "/community", label: "Comunidad", short: "CRM", active: true },
+    { href: "/recipes", label: "Recetario", short: "Cocina", active: true },
   ];
 }
 
