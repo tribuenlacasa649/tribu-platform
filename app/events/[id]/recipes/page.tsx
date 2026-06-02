@@ -15,7 +15,8 @@ type EventRecipeWithRecipe = EventRecipeRecord & {
 };
 
 export default function EventRecipesPage() {
-  const params = useParams<{ id: string }>();
+  const params = useParams<{ id?: string }>();
+  const eventId = params.id ?? "";
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [eventRecipes, setEventRecipes] = useState<EventRecipeWithRecipe[]>([]);
   const [recipes, setRecipes] = useState<RecipeRecord[]>([]);
@@ -27,15 +28,20 @@ export default function EventRecipesPage() {
   const [error, setError] = useState("");
 
   const loadData = useCallback(async () => {
+    if (!eventId) {
+      setIsLoading(false);
+      return;
+    }
+
     const [eventRecipesResult, recipesResult, ingredientsResult] = await Promise.all([
       supabase
         .from("event_recipes")
-        .select("id, event_id, recipe_id, planned_servings, notes, created_at, recipes(id, name, category, description, servings_base, instructions, notes, created_at)")
-        .eq("event_id", params.id)
+        .select("id, event_id, recipe_id, planned_servings, notes, created_at, recipes(id, name, category, photo_url, description, servings_base, prep_time_minutes, instructions, mise_en_place, production_notes, notes, created_at)")
+        .eq("event_id", eventId)
         .order("created_at", { ascending: false }),
       supabase
         .from("recipes")
-        .select("id, name, category, description, servings_base, instructions, notes, created_at")
+        .select("id, name, category, photo_url, description, servings_base, prep_time_minutes, instructions, mise_en_place, production_notes, notes, created_at")
         .order("name", { ascending: true }),
       supabase
         .from("recipe_ingredients")
@@ -53,7 +59,7 @@ export default function EventRecipesPage() {
     }
 
     setIsLoading(false);
-  }, [params.id, supabase]);
+  }, [eventId, supabase]);
 
   useEffect(() => {
     loadData();
@@ -63,8 +69,13 @@ export default function EventRecipesPage() {
     event.preventDefault();
     setError("");
 
+    if (!eventId || !recipeId) {
+      setError("Falta evento o receta.");
+      return;
+    }
+
     const { error: requestError } = await supabase.from("event_recipes").insert({
-      event_id: params.id,
+      event_id: eventId,
       recipe_id: recipeId,
       planned_servings: Number(plannedServings) || 1,
       notes: notes.trim() || null,
@@ -84,7 +95,7 @@ export default function EventRecipesPage() {
       .from("event_recipes")
       .delete()
       .eq("id", id)
-      .eq("event_id", params.id);
+      .eq("event_id", eventId);
 
     if (requestError) {
       setError(requestError.message);
@@ -101,7 +112,7 @@ export default function EventRecipesPage() {
   return (
     <AppShell title="Recetas">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
-        <EventContextNav eventId={params.id} />
+        {eventId ? <EventContextNav eventId={eventId} /> : null}
 
         <header className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10">
           <p className="text-xs font-black uppercase tracking-wide text-[#315C38]">Evento</p>

@@ -27,7 +27,8 @@ const initialForm = {
 };
 
 export default function EventStaffPage() {
-  const params = useParams<{ id: string }>();
+  const params = useParams<{ id?: string }>();
+  const eventId = params.id ?? "";
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [items, setItems] = useState<EventStaffWithMember[]>([]);
   const [form, setForm] = useState(initialForm);
@@ -36,10 +37,15 @@ export default function EventStaffPage() {
   const [error, setError] = useState("");
 
   const loadStaff = useCallback(async () => {
+    if (!eventId) {
+      setIsLoading(false);
+      return;
+    }
+
     const { data, error: requestError } = await supabase
       .from("event_staff")
       .select("id, event_id, staff_member_id, role, start_time, end_time, payment_amount, payment_status, attendance_status, notes, created_at, staff_members(id, full_name, phone, role, notes, created_at)")
-      .eq("event_id", params.id)
+      .eq("event_id", eventId)
       .order("start_time", { ascending: true });
 
     if (requestError) {
@@ -49,7 +55,7 @@ export default function EventStaffPage() {
     }
 
     setIsLoading(false);
-  }, [params.id, supabase]);
+  }, [eventId, supabase]);
 
   useEffect(() => {
     loadStaff();
@@ -58,6 +64,12 @@ export default function EventStaffPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
+
+    if (!eventId) {
+      setError("No se encontró el evento.");
+      return;
+    }
+
     setIsSaving(true);
 
     const { data: staffMember, error: memberError } = await supabase
@@ -78,7 +90,7 @@ export default function EventStaffPage() {
     }
 
     const { error: linkError } = await supabase.from("event_staff").insert({
-      event_id: params.id,
+      event_id: eventId,
       staff_member_id: staffMember.id,
       role: form.role,
       start_time: form.start_time || null,
@@ -105,7 +117,7 @@ export default function EventStaffPage() {
       .from("event_staff")
       .update(payload)
       .eq("id", id)
-      .eq("event_id", params.id);
+      .eq("event_id", eventId);
 
     if (requestError) {
       setError(requestError.message);
@@ -124,7 +136,7 @@ export default function EventStaffPage() {
       .from("event_staff")
       .delete()
       .eq("id", id)
-      .eq("event_id", params.id);
+      .eq("event_id", eventId);
 
     if (requestError) {
       setError(requestError.message);
@@ -137,7 +149,7 @@ export default function EventStaffPage() {
   return (
     <AppShell title="Staff">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
-        <EventContextNav eventId={params.id} />
+        {eventId ? <EventContextNav eventId={eventId} /> : null}
 
         <header className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10">
           <p className="text-xs font-black uppercase tracking-wide text-[#315C38]">Evento</p>

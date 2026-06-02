@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
 import { AppShell } from "../../../../components/AppShell";
 import { CashMovementCard } from "../../../../components/CashMovementCard";
 import { CashSummary } from "../../../../components/CashSummary";
@@ -34,7 +35,9 @@ const initialForm: CashFormState = {
   notes: "",
 };
 
-export default function EventCashPage({ params }: { params: { id: string } }) {
+export default function EventCashPage() {
+  const params = useParams<{ id?: string }>();
+  const eventId = params.id ?? "";
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [movements, setMovements] = useState<CashMovementRecord[]>([]);
   const [form, setForm] = useState<CashFormState>(initialForm);
@@ -46,10 +49,15 @@ export default function EventCashPage({ params }: { params: { id: string } }) {
   const [error, setError] = useState("");
 
   const loadMovements = useCallback(async () => {
+    if (!eventId) {
+      setIsLoading(false);
+      return;
+    }
+
     const { data, error: requestError } = await supabase
       .from("cash_movements")
       .select("id, event_id, type, category, description, amount, payment_method, date, notes, created_at")
-      .eq("event_id", params.id)
+      .eq("event_id", eventId)
       .order("date", { ascending: false });
 
     if (requestError) {
@@ -59,7 +67,7 @@ export default function EventCashPage({ params }: { params: { id: string } }) {
     }
 
     setIsLoading(false);
-  }, [params.id, supabase]);
+  }, [eventId, supabase]);
 
   useEffect(() => {
     loadMovements();
@@ -68,10 +76,16 @@ export default function EventCashPage({ params }: { params: { id: string } }) {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
+
+    if (!eventId) {
+      setError("No se encontró el evento.");
+      return;
+    }
+
     setIsSaving(true);
 
     const payload = {
-      event_id: params.id,
+      event_id: eventId,
       type: form.type,
       category: form.category,
       description: form.description.trim() || null,
@@ -82,7 +96,7 @@ export default function EventCashPage({ params }: { params: { id: string } }) {
     };
 
     const request = editingId
-      ? supabase.from("cash_movements").update(payload).eq("id", editingId).eq("event_id", params.id)
+      ? supabase.from("cash_movements").update(payload).eq("id", editingId).eq("event_id", eventId)
       : supabase.from("cash_movements").insert(payload);
 
     const { error: requestError } = await request;
@@ -107,7 +121,7 @@ export default function EventCashPage({ params }: { params: { id: string } }) {
       .from("cash_movements")
       .delete()
       .eq("id", id)
-      .eq("event_id", params.id);
+      .eq("event_id", eventId);
 
     if (requestError) {
       setError(requestError.message);
@@ -141,7 +155,7 @@ export default function EventCashPage({ params }: { params: { id: string } }) {
   return (
     <AppShell title="Caja">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
-        <EventContextNav eventId={params.id} />
+        {eventId ? <EventContextNav eventId={eventId} /> : null}
 
         <header className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10">
           <p className="text-xs font-black uppercase tracking-wide text-[#315C38]">Evento</p>

@@ -28,9 +28,9 @@ export default function RecipeDetailPage() {
 
   const loadRecipe = useCallback(async () => {
     const [recipeResult, ingredientsResult] = await Promise.all([
-      supabase
-        .from("recipes")
-        .select("id, name, category, description, servings_base, instructions, notes, created_at")
+        supabase
+          .from("recipes")
+        .select("id, name, category, photo_url, description, servings_base, prep_time_minutes, instructions, mise_en_place, production_notes, notes, created_at")
         .eq("id", params.id)
         .single(),
       supabase
@@ -103,19 +103,30 @@ export default function RecipeDetailPage() {
   return (
     <AppShell title={recipe.name}>
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
-        <header className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-black uppercase tracking-wide text-[#315C38]">{recipe.category || "receta"}</p>
-              <h1 className="mt-1 text-2xl font-black">{recipe.name}</h1>
-              <p className="mt-2 text-sm font-semibold text-[#6F7668]">{recipe.description || "Sin descripción"}</p>
+        <header className="overflow-hidden rounded-[2rem] border border-[#18251A]/10 bg-[#FFFDF8] shadow-2xl shadow-[#294F2F]/10">
+          {recipe.photo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={recipe.photo_url} alt={recipe.name} className="h-64 w-full object-cover" />
+          ) : (
+            <div className="h-56 bg-gradient-to-br from-[#315C38] via-[#7F936A] to-[#F2C66D]" />
+          )}
+          <div className="p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wide text-[#315C38]">{recipe.category || "receta"}</p>
+                <h1 className="mt-1 text-3xl font-black">{recipe.name}</h1>
+                <p className="mt-2 text-sm font-semibold text-[#6F7668]">{recipe.description || "Sin descripción"}</p>
+              </div>
+              <Link href={`/recipes/${recipe.id}/edit`} className="rounded-xl border border-[#18251A]/10 px-4 py-3 text-sm font-black">Editar</Link>
             </div>
-            <Link href={`/recipes/${recipe.id}/edit`} className="rounded-xl border border-[#18251A]/10 px-4 py-3 text-sm font-black">Editar</Link>
-          </div>
           <div className="mt-4 grid grid-cols-3 gap-2">
             <div className="rounded-xl bg-[#F6F1E8] p-3"><p className="text-xs font-black uppercase text-[#7F836F]">Base</p><p className="font-black">{recipe.servings_base}</p></div>
             <div className="rounded-xl bg-[#F6F1E8] p-3"><p className="text-xs font-black uppercase text-[#7F836F]">Costo</p><p className="font-black">{formatCurrency(totalCost)}</p></div>
             <div className="rounded-xl bg-[#F6F1E8] p-3"><p className="text-xs font-black uppercase text-[#7F836F]">Porción</p><p className="font-black">{formatCurrency(costPerServing)}</p></div>
+          </div>
+          <div className="mt-2 rounded-xl bg-[#DCE5D2] p-3 text-sm font-black text-[#315C38]">
+            Tiempo: {recipe.prep_time_minutes ? `${recipe.prep_time_minutes} minutos` : "sin definir"}
+          </div>
           </div>
         </header>
 
@@ -146,12 +157,31 @@ export default function RecipeDetailPage() {
           ))}
         </section>
 
-        {recipe.instructions ? (
-          <section className="rounded-2xl bg-[#FFFDF8] p-4">
-            <h2 className="text-lg font-black">Pasos</h2>
-            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#42503E]">{recipe.instructions}</p>
-          </section>
-        ) : null}
+        <section className="rounded-2xl bg-[#FFFDF8] p-4">
+          <h2 className="text-lg font-black">Pasos</h2>
+          <div className="mt-3 grid gap-2">
+            {(recipe.instructions || "Sin pasos cargados.")
+              .split("\n")
+              .filter(Boolean)
+              .map((step, index) => (
+                <label key={`${step}-${index}`} className="flex gap-3 rounded-xl bg-[#F6F1E8] p-3 text-sm font-semibold text-[#42503E]">
+                  <input type="checkbox" className="mt-1" />
+                  <span><strong>Paso {index + 1}.</strong> {step}</span>
+                </label>
+              ))}
+          </div>
+        </section>
+
+        <section className="grid gap-3 md:grid-cols-2">
+          <div className="rounded-2xl bg-[#FFFDF8] p-4">
+            <h2 className="text-lg font-black">Mise en place</h2>
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#42503E]">{recipe.mise_en_place || "Sin mise en place."}</p>
+          </div>
+          <div className="rounded-2xl bg-[#FFFDF8] p-4">
+            <h2 className="text-lg font-black">Producción</h2>
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#42503E]">{recipe.production_notes || recipe.notes || "Sin notas internas."}</p>
+          </div>
+        </section>
       </div>
     </AppShell>
   );

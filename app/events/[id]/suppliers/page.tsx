@@ -28,7 +28,8 @@ const initialForm = {
 };
 
 export default function EventSuppliersPage() {
-  const params = useParams<{ id: string }>();
+  const params = useParams<{ id?: string }>();
+  const eventId = params.id ?? "";
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [items, setItems] = useState<EventSupplierWithSupplier[]>([]);
   const [form, setForm] = useState(initialForm);
@@ -37,10 +38,15 @@ export default function EventSuppliersPage() {
   const [error, setError] = useState("");
 
   const loadSuppliers = useCallback(async () => {
+    if (!eventId) {
+      setIsLoading(false);
+      return;
+    }
+
     const { data, error: requestError } = await supabase
       .from("event_suppliers")
       .select("id, event_id, supplier_id, agreed_amount, paid_amount, status, notes, created_at, suppliers(id, name, category, contact_name, phone, instagram, email, notes, created_at)")
-      .eq("event_id", params.id)
+      .eq("event_id", eventId)
       .order("created_at", { ascending: false });
 
     if (requestError) {
@@ -50,7 +56,7 @@ export default function EventSuppliersPage() {
     }
 
     setIsLoading(false);
-  }, [params.id, supabase]);
+  }, [eventId, supabase]);
 
   useEffect(() => {
     loadSuppliers();
@@ -59,6 +65,12 @@ export default function EventSuppliersPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
+
+    if (!eventId) {
+      setError("No se encontró el evento.");
+      return;
+    }
+
     setIsSaving(true);
 
     const { data: supplier, error: supplierError } = await supabase
@@ -82,7 +94,7 @@ export default function EventSuppliersPage() {
     }
 
     const { error: linkError } = await supabase.from("event_suppliers").insert({
-      event_id: params.id,
+      event_id: eventId,
       supplier_id: supplier.id,
       agreed_amount: Number(form.agreed_amount) || 0,
       paid_amount: Number(form.paid_amount) || 0,
@@ -106,7 +118,7 @@ export default function EventSuppliersPage() {
       .from("event_suppliers")
       .update(payload)
       .eq("id", id)
-      .eq("event_id", params.id);
+      .eq("event_id", eventId);
 
     if (requestError) {
       setError(requestError.message);
@@ -125,7 +137,7 @@ export default function EventSuppliersPage() {
       .from("event_suppliers")
       .delete()
       .eq("id", id)
-      .eq("event_id", params.id);
+      .eq("event_id", eventId);
 
     if (requestError) {
       setError(requestError.message);
@@ -138,7 +150,7 @@ export default function EventSuppliersPage() {
   return (
     <AppShell title="Proveedores">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
-        <EventContextNav eventId={params.id} />
+        {eventId ? <EventContextNav eventId={eventId} /> : null}
 
         <header className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10">
           <p className="text-xs font-black uppercase tracking-wide text-[#315C38]">Evento</p>

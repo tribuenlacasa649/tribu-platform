@@ -275,9 +275,13 @@ export type RecipeRecord = {
   id: string;
   name: string;
   category: string | null;
+  photo_url: string | null;
   description: string | null;
   servings_base: number;
+  prep_time_minutes: number | null;
   instructions: string | null;
+  mise_en_place: string | null;
+  production_notes: string | null;
   notes: string | null;
   created_at: string;
 };

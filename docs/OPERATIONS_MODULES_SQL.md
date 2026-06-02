@@ -93,12 +93,21 @@ create table if not exists recipes (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   category text,
+  photo_url text,
   description text,
   servings_base integer not null default 1,
+  prep_time_minutes integer,
   instructions text,
+  mise_en_place text,
+  production_notes text,
   notes text,
   created_at timestamptz not null default now()
 );
+
+alter table recipes add column if not exists photo_url text;
+alter table recipes add column if not exists prep_time_minutes integer;
+alter table recipes add column if not exists mise_en_place text;
+alter table recipes add column if not exists production_notes text;
 
 create table if not exists recipe_ingredients (
   id uuid primary key default gen_random_uuid(),

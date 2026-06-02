@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "../../../../components/AppShell";
-import { Badge, guestStatusTone } from "../../../../components/Badge";
+import { Badge } from "../../../../components/Badge";
 import { CopyButton } from "../../../../components/CopyButton";
 import { EmptyState } from "../../../../components/EmptyState";
 import { EventContextNav } from "../../../../components/EventContextNav";
@@ -21,7 +21,6 @@ import { createSupabaseBrowserClient } from "../../../../lib/supabase";
 import { createTicketToken, getPublicTicketUrl } from "../../../../lib/tickets";
 import { createTicketWhatsAppMessage, createWhatsAppUrl } from "../../../../lib/whatsapp";
 import type { EventRecord, GuestRecord, PaymentStatus, PublicGuestRecord, TicketRecord } from "../../../../types/database";
-import { guestStatusLabels } from "../../actions";
 import { DeleteGuestButton } from "./GuestActions";
 
 type ParticipantSource = "guest" | "public_guest";
@@ -548,10 +547,6 @@ export default function GuestsPage() {
                   ? createWhatsAppUrl(participant.phone, whatsappMessage)
                   : "";
               const isExpanded = expandedParticipantId === participant.id;
-              const canConfirmAndGenerate =
-                participant.publicGuest
-                  ? participant.paymentStatus !== "confirmed"
-                  : participant.tickets.filter((ticket) => ticket.status !== "cancelled").length < participant.ticketQuantity;
               const canSendWhatsApp = participant.paymentStatus === "confirmed" && participant.tickets.length > 0;
 
               return (
@@ -570,36 +565,10 @@ export default function GuestsPage() {
                       </Badge>
                     </div>
 
-                    <div className="mt-3 grid grid-cols-4 gap-2 text-center">
-                      <div className="rounded-xl bg-[#F6F1E8] px-2 py-2">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#7F836F]">Entradas</p>
-                        <p className="mt-1 text-lg font-semibold">{participant.ticketQuantity}</p>
-                      </div>
-                      <div className="rounded-xl bg-[#F6F1E8] px-2 py-2">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#7F836F]">QR</p>
-                        <p className="mt-1 text-xs font-semibold">{getQrStatus(participant.tickets)}</p>
-                      </div>
-                      <div className="rounded-xl bg-[#F6F1E8] px-2 py-2">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#7F836F]">WhatsApp</p>
-                        <p className="mt-1 text-xs font-semibold">{getWhatsAppStatus(participant.tickets)}</p>
-                      </div>
-                      <div className="rounded-xl bg-[#F6F1E8] px-2 py-2">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#7F836F]">Tickets</p>
-                        <p className="mt-1 text-lg font-semibold">{participant.tickets.length}</p>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {participant.guest ? (
-                        <Badge tone={guestStatusTone(participant.guest.status)}>
-                          {guestStatusLabels[participant.guest.status]}
-                        </Badge>
-                      ) : (
-                        <Badge tone={participant.publicGuest?.status === "cancelled" ? "danger" : "warning"}>
-                          Solicitud publica
-                        </Badge>
-                      )}
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-black text-[#6F7668]">
+                      <span className="rounded-full bg-[#F6F1E8] px-3 py-2">{participant.ticketQuantity} entradas</span>
                       <Badge tone={getQrTone(participant.tickets)}>{getQrStatus(participant.tickets)}</Badge>
+                      <span className="rounded-full bg-[#F6F1E8] px-3 py-2">WhatsApp {getWhatsAppStatus(participant.tickets)}</span>
                     </div>
 
                     <div className="mt-4 grid grid-cols-3 gap-2">
@@ -645,28 +614,16 @@ export default function GuestsPage() {
                       )}
                     </div>
 
-                    <div className="mt-2 grid gap-2">
-                      {canConfirmAndGenerate ? (
-                        <button
-                          type="button"
-                          onClick={() => confirmPayment(participant)}
-                          disabled={activeId === participant.id}
-                          className="min-h-11 rounded-xl bg-[#315C38] px-4 text-sm font-semibold text-[#FFFDF8] transition hover:bg-[#294F2F] disabled:opacity-60"
-                        >
-                          {activeId === participant.id ? "Procesando..." : "Confirmar y generar QR"}
-                        </button>
-                      ) : null}
-                      {canSendWhatsApp && whatsappUrl ? (
-                        <a
-                          href={whatsappUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex min-h-11 items-center justify-center rounded-xl bg-[#315C38] px-4 text-sm font-semibold text-[#FFFDF8]"
-                        >
-                          Enviar QR por WhatsApp
-                        </a>
-                      ) : null}
-                    </div>
+                    {canSendWhatsApp && whatsappUrl ? (
+                      <a
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-2 flex min-h-10 items-center justify-center rounded-xl bg-[#315C38] px-4 text-sm font-semibold text-[#FFFDF8]"
+                      >
+                        Enviar QR por WhatsApp
+                      </a>
+                    ) : null}
                   </div>
 
                   {isExpanded ? (

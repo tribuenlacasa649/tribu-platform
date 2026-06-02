@@ -21,7 +21,7 @@ export default function RecipesPage() {
       const [recipesResult, ingredientsResult] = await Promise.all([
         supabase
           .from("recipes")
-          .select("id, name, category, description, servings_base, instructions, notes, created_at")
+          .select("id, name, category, photo_url, description, servings_base, prep_time_minutes, instructions, mise_en_place, production_notes, notes, created_at")
           .order("created_at", { ascending: false }),
         supabase
           .from("recipe_ingredients")
@@ -57,7 +57,7 @@ export default function RecipesPage() {
         <header className="rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] p-4 shadow-2xl shadow-[#294F2F]/10">
           <p className="text-xs font-black uppercase tracking-wide text-[#315C38]">Tribu</p>
           <h1 className="mt-1 text-2xl font-black">Recetario</h1>
-          <p className="mt-1 text-sm font-semibold text-[#6F7668]">Recetas, costos y cantidades para eventos.</p>
+          <p className="mt-1 text-sm font-semibold text-[#6F7668]">Cocina, costos y producción para eventos.</p>
           <Link href="/recipes/new" className="mt-4 flex min-h-12 items-center justify-center rounded-xl bg-[#315C38] text-sm font-black text-[#FFFDF8]">
             Crear receta
           </Link>
@@ -66,6 +66,19 @@ export default function RecipesPage() {
         {error ? <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-700">{error}</div> : null}
 
         <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar receta..." className="min-h-12 rounded-2xl border border-[#18251A]/10 bg-[#FFFDF8] px-4 font-semibold outline-none" />
+
+        <section className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+          {["Entradas", "Principales", "Postres", "Panificados", "Bebidas", "Cocktails", "Salsas", "Producción"].map((category) => (
+            <button
+              key={category}
+              type="button"
+              onClick={() => setQuery(category.toLowerCase().replace("principales", "principal"))}
+              className="min-h-10 shrink-0 rounded-full bg-[#FFFDF8] px-4 text-sm font-black text-[#294F2F] ring-1 ring-[#18251A]/10"
+            >
+              {category}
+            </button>
+          ))}
+        </section>
 
         {isLoading ? (
           <div className="rounded-2xl bg-[#FFFDF8] p-4 text-sm font-semibold text-[#6F7668]">Cargando recetas...</div>
